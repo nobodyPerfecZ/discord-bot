@@ -1,7 +1,8 @@
 # Project discordbot
 
 This project is about *creating a bot* for the discord server [Wixoss Gaming](https://discord.gg/sgzNMyRduF) with python and the library discordpy. The bot should have the following functionalities:
-##### the bot can (...) #####
+
+##### The bot can (...) #####
 - []  automatically adds new members to the role **Genin** 
 - []  kick someone from the server with command: **!kick name**
 - []  kick all member in the same channel as you from the server with **!kick all**
