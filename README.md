@@ -6,5 +6,5 @@ This is a simple readme file for our GitHub Example.
 * Markdown is really fast
 * Pretty cool
 
-## Link Example
-[CodeTime](https://www.google.de)
+#### Documentation about all used technologies 
+* [DiscordPy](https://discordpy.readthedocs.io/en/latest/intro.html)
