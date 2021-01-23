@@ -4,7 +4,7 @@ This project is about *creating a bot* for the discord server [Wixoss Gaming](ht
 
 - [] the bot automatically adds new members to the role **Genin** 
 - [] the bot can kick someone from the server with command: **!kick name**
-- [] the bot can kick all member in the same channel as you from the server with command: **!kick all**
+- [] the bot can kick all member in the same channel as you from the server with **!kick all**
 - [] the bot can add a member a random role if the user gets the questions right (like a Quiz)
 - [] the bot can move one specific member into your channel with **!move name**
 - [] the bot can move all member in the server in your channel with **!move all**
