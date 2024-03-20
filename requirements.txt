@@ -1,3 +1,5 @@
 discord.py
+discord.py[voice]
+discord
 ffmpeg-python
 yt-dlp

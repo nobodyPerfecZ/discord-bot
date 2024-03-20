@@ -7,9 +7,9 @@ import discord
 import yt_dlp.utils
 from discord import AudioSource
 from discord.ext import commands
-from discord.utils import get
 from yt_dlp import YoutubeDL
 
+from discord_bot.command.music_state import MusicState
 from discord_bot.util.playlist_manager import AudioFile, PlaylistManager
 from discord_bot.util.role import to_priority
 
@@ -104,24 +104,27 @@ class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.playlist = PlaylistManager()
+        self.music_state = MusicState.DISCONNECT
         self.volume = 0.5
 
-    async def next(self, ctx: commands.Context, e):
+    async def next(self, ctx: commands.Context):
         """
         Plays the next song in the playlist.
         """
+        if self.music_state != MusicState.PLAY and self.music_state != MusicState.PAUSE:
+            # Case: Bot never played/paused a song before
+            return
+
         if self.playlist.empty():
-            return await ctx.send("The playlist is empty!")
+            return await ctx.send("Playlist is empty!")
 
         # Get the voice client
-        voice_client = get(self.bot.voice_clients, guild=ctx.guild)
-
-        # Stop playing the music
-        voice_client.stop()
+        voice_client = ctx.voice_client
 
         # Play the next song
         player = await YTDLSource.from_url(self.playlist.pop().url, volume=self.volume, loop=self.bot.loop)
-        voice_client.play(player, after=lambda e: asyncio.run_coroutine_threadsafe(self.next(ctx, e), self.bot.loop))
+        voice_client.play(player, after=lambda _: asyncio.run_coroutine_threadsafe(self.next(ctx), self.bot.loop))
+        self.music_state = MusicState.PLAY
         await ctx.send(f"Now playing: {player.title}")
 
     @commands.command()
@@ -131,48 +134,47 @@ class Music(commands.Cog):
 
         This command ensures that the bot is joining the current voice channel of the author.
 
-        - If author is in no voice channel, then nothing happens.
-        - If bot is in another voice channel, then it will move to the current voice channel.
-        - If bot is already in the current voice channel, then noting happens.
+        Unusual cases being treated:
+            - If author is not in a voice channel, then a warning message will be sent
+            - If bot is in another voice channel, then it will move to voice channel and stops playing music
+            - If bot is already in the current voice channel, then a warning message will be sent
         """
-        if ctx.author.voice is None:
-            # Case: Author is not in a voice channel
-            return await ctx.send("You need to be in a voice channel!")
-
         author_channel = ctx.author.voice.channel
-
-        if ctx.voice_client is not None:
-            # Case: Bot is already in a voice channel
+        if ctx.voice_client is None:
+            # Case: Bot is not in a voice channel
+            await author_channel.connect()
+            self.music_state = MusicState.CONNECT
+            return await ctx.send(f"Moved to {author_channel}!")
+        else:
+            # Case: Bot is in a voice channel
             bot_channel = ctx.voice_client.channel
-
             if author_channel == bot_channel:
-                # Case: Bot is in the same channel with the author
-                return await ctx.send(f"Stayed in '{bot_channel}'")
+                # Case: Bot is in the same voice channel as the author
+                return await ctx.send(f"Stayed in {bot_channel}!")
 
-            # Case: Bot is not in the same channel with the author
-
+            # Case: Bot is not in the same voice channel as the author
             if ctx.voice_client.is_playing():
-                # Case: Bot is currently playing
+                # Case: Bot is currently playing - pause the music
                 ctx.voice_client.pause()
+                self.music_state = MusicState.PAUSE
+
             await ctx.voice_client.move_to(author_channel)
-            return await ctx.send(f"Moved from '{bot_channel}' to '{author_channel}'!")
+            return await ctx.send(f"Moved from {bot_channel} to {author_channel}!")
 
-        # Case: Bot is in no voice channel
-        await ctx.send(f"Moved to '{author_channel}'!")
-        await author_channel.connect()
-
-    @commands.command(name="leave", help="Leaves the voice channel")
+    @commands.command()
     async def leave(self, ctx: commands.Context):
         """
+        Leaves the voice channel.
+
         This command ensures that the bot is leaving the voice channel.
 
-        - If bot is not in a voice channel, then nothing happens.
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
         """
-        if ctx.voice_client is not None:
-            bot_channel = ctx.voice_client.channel
-            await ctx.voice_client.disconnect(force=False)
-            return await ctx.send(f"Left '{bot_channel}'!")
-        await ctx.send(f"I need to be in a voice channel, before i can leave it!")
+        channel = ctx.voice_client.channel
+        await ctx.voice_client.disconnect(force=False)
+        self.music_state = MusicState.DISCONNECT
+        return await ctx.send(f"Left {channel}!")
 
     @commands.command()
     async def add(self, ctx: commands.Context, *, url: str):
@@ -180,60 +182,64 @@ class Music(commands.Cog):
         Adds a song (YouTube URL) to the playlist.
 
         This command ensures that the given YouTube URL is added to the playlist.
-        If the given YouTube URL is not supported by YoutubeDL, then it will not be added to the playlist.
 
-        Arguments:
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+            - If given url is not supported, then it will not be added to the playlist and a warning message will
+              be sent
+
+        Args:
             url (str):
                 The URL of the YouTube video to be added to the playlist
         """
-        # Check if the given url is valid
-        is_valid = await YTDLSource.is_valid(url)
-        if not is_valid:
-            # Case: The url is not supported by YTDL
-            return await ctx.send(f"Not supported by YTDL: '{url}'!")
+        if not await YTDLSource.is_valid(url):
+            # Case: The url is not supported
+            return await ctx.send(f"Your given url {url} is not supported!")
 
-        # Create the audio file with the priority
+        # Create the audio file and assign it with the highest priority
         priority = min([to_priority(role.name) for role in ctx.author.roles])
         audio_file = AudioFile(priority=priority, url=url)
 
         # Add the audio file to the playlist
         self.playlist.add(audio_file)
-        await ctx.send(f"Added to the playlist: '{url}'!")
+        await ctx.send(f"Added to the playlist: {url}!")
 
     @commands.command()
     async def play(self, ctx: commands.Context):
         """
         Start playing the next song from the playlist.
 
-        This command ensures that the bot starts the audio playback by playing the first song from the playlist.
-        If bot is not in a voice channel, then nothing happens.
-        If bot is already playing songs, then nothing happens.
-        If bot is paused, then it will resume playing the current song.
-        If playlist is empty, then noting happens.
-        """
-        if ctx.voice_client is None:
-            # Case: Bot is not in a voice channel
-            return await ctx.send("I need to be in a voice channel, before i can play a song!")
+        This command ensures that the bot starts the audio playback by playing the first song from the playlist.#
 
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+            - If bot is already playing songs, then a warning message will be sent
+            - If bot is paused, then it will resume playing the current song
+            - If playlist is empty, then a warning message will be sent
+        """
         if ctx.voice_client.is_playing():
             # Case: Bot already plays music
-            return await ctx.send("I am currently playing a song!")
+            return await ctx.send(f"Currently playing: {ctx.voice_client.source.title}!")
 
         if ctx.voice_client.is_paused():
             # Case: Bot is paused
             ctx.voice_client.resume()
-            return await ctx.send("Resume playing the current song!")
+            self.music_state = MusicState.PLAY
+            return await ctx.send(f"Resume playing: {ctx.voice_client.source.title}!")
 
         if self.playlist.empty():
             # Case: There is no music in the playlist
-            return await ctx.send("The playlist is empty!")
+            return await ctx.send("Playlist is empty!")
 
         # Start playing the next song from the playlist
         player = await YTDLSource.from_url(self.playlist.pop().url, volume=self.volume, loop=self.bot.loop)
         ctx.voice_client.play(
             player,
-            after=lambda e: asyncio.run_coroutine_threadsafe(self.next(ctx, e), self.bot.loop)
+            after=lambda _: asyncio.run_coroutine_threadsafe(self.next(ctx), self.bot.loop)
         )
+        self.music_state = MusicState.PLAY
         await ctx.send(f"Now playing: {player.title}")
 
     @commands.command()
@@ -242,41 +248,37 @@ class Music(commands.Cog):
         Pauses the current played song.
 
         This command ensures that the bot pauses the playback of the current played song.
-        If bot is not in a voice channel, then nothing happens.
-        If bot is paused, then nothing happens.
+
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+            - If bot does not play/pause any song, then a warning message will be sent
+            - If bot already pauses a song, then a warning message will be sent
         """
-        if ctx.voice_client is None:
-            # Case: Bot is not in a voice channel
-            return await ctx.send("I need to be in a voice channel, before i can pause a song!")
-
-        if not ctx.voice_client.is_playing():
+        if ctx.voice_client.is_playing():
             # Case: Bot does not play a song
-            return await ctx.send("I need to play a song, before i can pause it!")
+            ctx.voice_client.pause()
+            self.music_state = MusicState.PAUSE
+            return await ctx.send(f"Paused: {ctx.voice_client.source.title}!")
 
-        # Case: Bot does play a song
-        ctx.voice_client.pause()
-        await ctx.send("Paused!")
+        if ctx.voice_client.is_paused():
+            # Case: Bot is paused
+            return await ctx.send(f"Still paused: {ctx.voice_client.source.title}!")
 
     @commands.command()
     async def skip(self, ctx: commands.Context):
         """
-        Skips the current played song
+        Skips the current played song.
 
         This command ensures that the bot skips the current played song and continues to play the next song from the
         playlist.
-        If bot is not in a voice channel, then nothing happens.
-        If bot is not playing/pausing a song, then nothing happens.
-        If playlist is empty, then nothing happens.
+
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+            - If bot does not play/pause any song, then a warning message will be sent
         """
-        if ctx.voice_client is None:
-            # Case: Bot is not in a voice channel
-            return await ctx.send("I need to be in a voice channel, before i can skip any song!")
-
-        if not ctx.voice_client.is_playing() and not ctx.voice_client.is_paused():
-            # Case: Bot does not play any music
-            return await ctx.send("I need to play/pause a song, before i can skip them!")
-
-        # Stop playing the current music (and skip to the next one)
+        # Stop playing the current music (removes the audio stream and skip to the next one)
         ctx.voice_client.stop()
 
     @commands.command()
@@ -285,19 +287,24 @@ class Music(commands.Cog):
         Removes the first n songs from the playlist.
 
         This command ensures that the next n songs will be removed from the playlist.
-        If the playlist does not have at least n songs, then nothing happens.
+
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+            - If playlist does not have at least n songs, then a warning message will be sent
 
         Args:
             n (int):
                 The number of next songs to be removed
         """
-        try:
-            await self.bot.loop.run_in_executor(None, lambda: self.playlist.remove(n=n))
-            return await ctx.send(f"The next {n} songs are removed!")
-        except ValueError:
-            return await ctx.send(
-                "No songs are removed, because your number does not match with the length of the playlist!"
-            )
+        if self.playlist.empty():
+            return await ctx.send("Playlist is empty!")
+
+        if n <= 0 or n > len(self.playlist):
+            return await ctx.send(f"n should be in between of 1 and {len(self.playlist)}!")
+
+        await self.bot.loop.run_in_executor(None, lambda: self.playlist.remove(n=n))
+        return await ctx.send(f"{n} songs are removed from the playlist!")
 
     @commands.command()
     async def reset(self, ctx: commands.Context):
@@ -305,15 +312,20 @@ class Music(commands.Cog):
         Stops the current song and clears the playlist.
 
         This command ensures that the bot stops the current audio playback and the playlist will be reset.
+
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
         """
         # Clear the playlist
         self.playlist.clear()
+        self.music_state = MusicState.CONNECT
 
-        if ctx.voice_client:
-            # Case: Bot is in a voice channel
+        if ctx.voice_client.is_playing() or ctx.voice_client.is_pausing():
+            # Case: Bot plays/pause a song
             ctx.voice_client.stop()
 
-        await ctx.send("The playlist is cleared!")
+        await ctx.send("Playlist is reset!")
 
     @commands.command()
     async def show(self, ctx: commands.Context):
@@ -321,17 +333,19 @@ class Music(commands.Cog):
         Displays the songs in the playlist (and currently played song).
 
         This command ensures that the bot will show the playlist including the currently played song.
-        If playlist is empty, then nothing happens.
-        If bot is not playing/pause a song, then it will only show the playlist.
+
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
         """
         summary = "Playlist:\n"
-        if ctx.voice_client is not None and (ctx.voice_client.is_playing() or ctx.voice_client.is_paused()):
+        if ctx.voice_client.is_playing() or ctx.voice_client.is_paused():
             summary += f"Currently playing: {ctx.voice_client.source.title}\n"
         for i, audio in enumerate(self.playlist, 1):
             summary += f"{i}. {str(audio)}\n"
 
         if summary == "Playlist:\n":
-            return await ctx.send("The playlist is empty!")
+            return await ctx.send("Playlist is empty!")
         await ctx.send(summary)
 
     @commands.command()
@@ -339,26 +353,67 @@ class Music(commands.Cog):
         """
         Changes the volume of the audio playback.
 
-        If bot is not in a voice channel, then nothing happens.
-        If bot is not playing/paused a song, then nothing happens.
-        If volume is not in (0, 100) then nothing happens.
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+            - If volume is not in (0, 100) then a warning message will be sent.
 
         Args:
             volume (int):
                 The volume of the audio playback
         """
-        if ctx.voice_client is None:
-            # Case: Bot is not in a voice channel
-            return await ctx.send("I need to be in a voice channel, before i can change the volume!")
-
-        if not ctx.voice_client.is_playing() and not ctx.voice_client.is_paused():
-            # Case: Bot does not play/pause a song
-            return await ctx.send("I need to play/pause a song, before i can change the volume!")
-
         if volume < 0 or volume > 100:
-            return await ctx.send("The volume needs to be in between of 0 and 100!")
+            return await ctx.send("Volume needs to be in between of 0 and 100!")
 
         # Change the volume of the audio playback
         self.volume = volume / 100
         ctx.voice_client.source.volume = self.volume
-        await ctx.send(f"Changed volume to {volume}")
+        await ctx.send(f"Changed volume to {volume}!")
+
+    @join.before_invoke
+    async def check_author_voice(self, ctx: commands.Context):
+        if ctx.author.voice is None:
+            # Case: Author is not in a voice channel
+            await ctx.send("You need to be connected to a voice channel, before using this command!")
+            raise commands.CommandError("Author is not connected to a voice channel!")
+
+    @leave.before_invoke
+    @add.before_invoke
+    @play.before_invoke
+    @remove.before_invoke
+    @reset.before_invoke
+    @show.before_invoke
+    async def check_author_and_client_voice(self, ctx: commands.Context):
+        if ctx.voice_client is None:
+            # Case: Bot is not in a voice channel
+            await ctx.send("I need to be connected to a voice channel, before using this command!")
+            raise commands.CommandError("Bot is not connected to a voice channel!")
+
+        if ctx.author.voice is None or ctx.author.voice.channel != ctx.voice_client.channel:
+            # Case: Author is not in a voice channel
+            await ctx.send(
+                "You need to be connected to the same voice channel as me, before using this command!"
+            )
+            raise commands.CommandError("Author and bot are not in the same voice channel!")
+
+    @pause.before_invoke
+    @skip.before_invoke
+    async def check_author_client_voice_and_source(self, ctx: commands.Context):
+        if ctx.voice_client is None:
+            # Case: Bot is not in a voice channel
+            await ctx.send("I need to be connected to a voice channel, before using this command!")
+            raise commands.CommandError("Bot is not connected to a voice channel!")
+
+        if ctx.author.voice is None or ctx.author.voice.channel != ctx.voice_client.channel:
+            # Case: Author is not in a voice channel
+            await ctx.send(
+                "You need to be connected to the same voice channel as me, before using this command!"
+            )
+            raise commands.CommandError("Author and bot are not in the same voice channel!")
+
+        if not ctx.voice_client.is_playing() and not ctx.voice_client.is_playing():
+            # Case: Bot does not play/pause any song
+            await ctx.send(
+                "You need to play/pause a song, before using this command!"
+            )
+            raise commands.CommandError("Bot does not play/pause any song!")
