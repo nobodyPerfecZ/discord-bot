@@ -370,50 +370,137 @@ class Music(commands.Cog):
         ctx.voice_client.source.volume = self.volume
         await ctx.send(f"Changed volume to {volume}!")
 
-    @join.before_invoke
-    async def check_author_voice(self, ctx: commands.Context):
+    @staticmethod
+    async def _check_author_voice(ctx: commands.Context):
+        """
+        Raises an error if the author is not in a voice channel.
+
+        Args:
+            ctx (commands.Context):
+                The discord context
+
+        Raises:
+            commands.CommandError:
+                If the author is not in a voice channel
+        """
         if ctx.author.voice is None:
             # Case: Author is not in a voice channel
             await ctx.send("You need to be connected to a voice channel, before using this command!")
             raise commands.CommandError("Author is not connected to a voice channel!")
 
-    @leave.before_invoke
-    @add.before_invoke
-    @play.before_invoke
-    @remove.before_invoke
-    @reset.before_invoke
-    @show.before_invoke
-    async def check_author_and_client_voice(self, ctx: commands.Context):
+    @staticmethod
+    async def _check_bot_voice(ctx: commands.Context):
+        """
+        Raises an error if the bot is not in a voice channel.
+
+        Args:
+            ctx (commands.Context):
+                The discord context
+
+        Raises:
+            commands.CommandError:
+                If the bot is not in a voice channel
+        """
         if ctx.voice_client is None:
             # Case: Bot is not in a voice channel
             await ctx.send("I need to be connected to a voice channel, before using this command!")
             raise commands.CommandError("Bot is not connected to a voice channel!")
 
-        if ctx.author.voice is None or ctx.author.voice.channel != ctx.voice_client.channel:
+    @staticmethod
+    async def _check_author_and_bot_voice(ctx: commands.Context):
+        """
+        Raises an error if the author and the bot are not in the same voice channel.
+
+        Args:
+            ctx (commands.Context):
+                The discord context
+
+        Raises:
+            commands.CommandError:
+                If the author and the bot are not in the same voice channel
+        """
+        if ctx.author.voice.channel != ctx.voice_client.channel:
             # Case: Author is not in a voice channel
             await ctx.send(
                 "You need to be connected to the same voice channel as me, before using this command!"
             )
             raise commands.CommandError("Author and bot are not in the same voice channel!")
+
+    @staticmethod
+    async def _check_bot_streaming(ctx: commands.Context):
+        """
+        Raises an error if the bot is not streaming (playing/pausing) and audio stream.
+
+        Args:
+            ctx (commands.Context):
+                The discord context
+
+        Raises:
+            commands.CommandError:
+                If the bot is not streaming (playing/pausing) and audio stream
+        """
+        if not ctx.voice_client.is_playing() and not ctx.voice_client.is_pausing():
+            # Case: Bot does not play/pause any song
+            await ctx.send("You need to play/pause a song, before using this command!")
+            raise commands.CommandError("Bot does not play/pause any song!")
+
+    @join.before_invoke
+    async def check_for_join(self, ctx: commands.Context):
+        await Music._check_author_voice(ctx)
+
+    @leave.before_invoke
+    async def check_for_leave(self, ctx: commands.Context):
+        await Music._check_author_voice(ctx)
+        await Music._check_bot_voice(ctx)
+        await Music._check_author_and_bot_voice(ctx)
+
+    @add.before_invoke
+    async def check_for_add(self, ctx: commands.Context):
+        await Music._check_author_voice(ctx)
+        await Music._check_bot_voice(ctx)
+        await Music._check_author_and_bot_voice(ctx)
+
+    @play.before_invoke
+    async def check_for_play(self, ctx: commands.Context):
+        await Music._check_author_voice(ctx)
+        await Music._check_bot_voice(ctx)
+        await Music._check_author_and_bot_voice(ctx)
 
     @pause.before_invoke
+    async def check_for_pause(self, ctx: commands.Context):
+        await Music._check_author_voice(ctx)
+        await Music._check_bot_voice(ctx)
+        await Music._check_author_and_bot_voice(ctx)
+        await Music._check_bot_streaming(ctx)
+
     @skip.before_invoke
-    async def check_author_client_voice_and_source(self, ctx: commands.Context):
-        if ctx.voice_client is None:
-            # Case: Bot is not in a voice channel
-            await ctx.send("I need to be connected to a voice channel, before using this command!")
-            raise commands.CommandError("Bot is not connected to a voice channel!")
+    async def check_for_skip(self, ctx: commands.Context):
+        await Music._check_author_voice(ctx)
+        await Music._check_bot_voice(ctx)
+        await Music._check_author_and_bot_voice(ctx)
+        await Music._check_bot_streaming(ctx)
 
-        if ctx.author.voice is None or ctx.author.voice.channel != ctx.voice_client.channel:
-            # Case: Author is not in a voice channel
-            await ctx.send(
-                "You need to be connected to the same voice channel as me, before using this command!"
-            )
-            raise commands.CommandError("Author and bot are not in the same voice channel!")
+    @remove.before_invoke
+    async def check_for_remove(self, ctx: commands.Context):
+        await Music._check_author_voice(ctx)
+        await Music._check_bot_voice(ctx)
+        await Music._check_author_and_bot_voice(ctx)
 
-        if not ctx.voice_client.is_playing() and not ctx.voice_client.is_playing():
-            # Case: Bot does not play/pause any song
-            await ctx.send(
-                "You need to play/pause a song, before using this command!"
-            )
-            raise commands.CommandError("Bot does not play/pause any song!")
+    @reset.before_invoke
+    async def check_for_reset(self, ctx: commands.Context):
+        await Music._check_author_voice(ctx)
+        await Music._check_bot_voice(ctx)
+        await Music._check_author_and_bot_voice(ctx)
+
+    @show.before_invoke
+    async def check_for_show(self, ctx: commands.Context):
+        await Music._check_author_voice(ctx)
+        await Music._check_bot_voice(ctx)
+        await Music._check_author_and_bot_voice(ctx)
+
+    @volume.before_invoke
+    async def check_for_volume(self, ctx: commands.Context):
+        await Music._check_author_voice(ctx)
+        await Music._check_bot_voice(ctx)
+        await Music._check_author_and_bot_voice(ctx)
+        await Music._check_bot_streaming(ctx)
