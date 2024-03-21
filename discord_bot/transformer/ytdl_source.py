@@ -8,8 +8,8 @@ from discord import AudioSource
 from yt_dlp import YoutubeDL
 
 ffmpeg_options = {
-    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-    'options': '-vn',
+    "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+    "options": "-vn",
 }
 
 ydl_options = {
@@ -27,18 +27,27 @@ class YTDLSource(discord.PCMVolumeTransformer):
     Represents a YouTube audio source that can be played by a discord bot.
 
     This class allows to adjust the volume of the audio.
+
+    Attributes:
+        source (AudioSource):
+            The audio source to stream
+
+        data (dict[str, Any]):
+            Contains information about the audio source (e.g. title of the audio source)
+
+        volume (int):
+            The volume of the audio source
     """
 
-    def __init__(self, source: AudioSource, *, data: dict[str, Any], volume: float = 0.5):
-        super().__init__(source, volume)
+    def __init__(self, source: AudioSource, *, data: dict[str, Any], volume: int = 50):
+        super().__init__(original=source, volume=volume / 100)
 
         self.data = data
-
         self.title = data["title"]
         self.url = data["url"]
 
     @classmethod
-    async def from_url(cls, url: str, *, volume: float = 0.5, loop: AbstractEventLoop = None) -> "YTDLSource":
+    async def from_url(cls, url: str, *, volume: int = 50, loop: AbstractEventLoop = None) -> "YTDLSource":
         """
         Construct a YTDLSource given the YouTube URL.
 
@@ -46,8 +55,8 @@ class YTDLSource(discord.PCMVolumeTransformer):
             url (str):
                 The URL of the YouTube video
 
-            volume (float):
-                The volume of the YTDLSource
+            volume (int):
+                The volume of the audio source
 
             loop (AbstractEventLoop):
                 The event loop to start the audio connection in the background

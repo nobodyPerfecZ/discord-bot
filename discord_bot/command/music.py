@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from discord_bot.command.music_state import MusicState
 from discord_bot.transformer.ytdl_source import YTDLSource
@@ -11,22 +11,76 @@ from discord_bot.util.role import to_priority
 logger = logging.getLogger('discord')
 
 
-# TODO: Add listener to disconnect the bot after 10 min of inactivity
-# TODO: Add listener to reset the bot after 20 min of inactivity
 class Music(commands.Cog):
     """
     This class represents a suite of commands to control a music bot in a Discord Server.
+
+    Attributes:
+        bot (commands.Bot):
+            The discord client to handle the commands
+
+        disconnect_timeout (float):
+            The time in seconds, where the bot leaves the server and resets its playlist
+
+        volume (int):
+            The starting volume with a value in between of 0 and 100
     """
 
-    def __init__(self, bot: commands.Bot, volume: int = 50):
+    def __init__(
+            self,
+            bot: commands.Bot,
+            disconnect_timeout: float = 600,
+            volume: int = 50
+    ):
         if volume < 0 or volume > 100:
             raise ValueError("Volume needs to be in between of 0 and 100!")
+        if disconnect_timeout < 0:
+            raise ValueError("Disconnect timeout needs to be higher than or equal to 0!")
+
         self.bot = bot
         self.playlist = PlaylistManager()
         self.music_state = MusicState.DISCONNECT
-        self.volume = volume / 100
+        self.disconnect_timeout = disconnect_timeout
+        self.disconnect_time = 0
+        self.start_volume = volume
+        self.volume = volume
+        self.disconnect.start()
 
-    async def _next(self, ctx: commands.Context):
+    @tasks.loop(seconds=30.0)
+    async def disconnect(self):
+        """
+        Background Tasks to handle the disconnect timeout.
+
+        After the bot reached disconnect_timeout it will leave the server and resets its playlist and volume.
+        """
+        if (
+                self.disconnect_timeout == 0 or
+                self.music_state == MusicState.DISCONNECT or
+                self.music_state == MusicState.PLAY
+        ):
+            # Case: Disable the background task
+            self.disconnect_time = 0
+            return
+
+        # Case: Bot is currently pausing or connected to a voice channel
+        self.disconnect_time += 30
+
+        if self.disconnect_time >= self.disconnect_timeout:
+            # Case: Timeout has reached
+            # Disconnect the bot from the voice channel
+            self.music_state = MusicState.DISCONNECT
+            await self.bot.voice_clients[0].disconnect(force=False)
+
+            # Clear the playlist
+            self.playlist.clear()
+
+            # Set the volume to standard
+            self.volume = self.start_volume
+
+            # Reset the disconnect time
+            self.disconnect_time = 0
+
+    async def _play_next(self, ctx: commands.Context):
         """
         Plays the next song in the playlist.
 
@@ -34,7 +88,7 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context (will be added automatically)
         """
-        if self.music_state != MusicState.PLAY and self.music_state != MusicState.PAUSE:
+        if self.music_state == MusicState.DISCONNECT or self.music_state == MusicState.CONNECT:
             # Case: Bot never played/paused a song before
             return
 
@@ -46,7 +100,7 @@ class Music(commands.Cog):
 
         # Play the next song
         player = await YTDLSource.from_url(self.playlist.pop().url, volume=self.volume, loop=self.bot.loop)
-        voice_client.play(player, after=lambda _: asyncio.run_coroutine_threadsafe(self._next(ctx), self.bot.loop))
+        voice_client.play(player, after=lambda _: asyncio.run_coroutine_threadsafe(self._play_next(ctx), self.bot.loop))
         self.music_state = MusicState.PLAY
         await ctx.send(f"Now playing: {player.title}")
 
@@ -69,8 +123,8 @@ class Music(commands.Cog):
         author_channel = ctx.author.voice.channel
         if ctx.voice_client is None:
             # Case: Bot is not in a voice channel
-            await author_channel.connect()
             self.music_state = MusicState.CONNECT
+            await author_channel.connect()
             return await ctx.send(f"Moved to {author_channel}!")
         else:
             # Case: Bot is in a voice channel
@@ -82,8 +136,8 @@ class Music(commands.Cog):
             # Case: Bot is not in the same voice channel as the author
             if ctx.voice_client.is_playing():
                 # Case: Bot is currently playing - pause the music
-                ctx.voice_client.pause()
                 self.music_state = MusicState.PAUSE
+                ctx.voice_client.pause()
 
             await ctx.voice_client.move_to(author_channel)
             return await ctx.send(f"Moved from {bot_channel} to {author_channel}!")
@@ -104,8 +158,8 @@ class Music(commands.Cog):
                 The discord context (will be added automatically)
         """
         channel = ctx.voice_client.channel
-        await ctx.voice_client.disconnect(force=False)
         self.music_state = MusicState.DISCONNECT
+        await ctx.voice_client.disconnect(force=False)
         return await ctx.send(f"Left {channel}!")
 
     @commands.command()
@@ -164,8 +218,8 @@ class Music(commands.Cog):
 
         if ctx.voice_client.is_paused():
             # Case: Bot is paused
-            ctx.voice_client.resume()
             self.music_state = MusicState.PLAY
+            ctx.voice_client.resume()
             return await ctx.send(f"Resume playing: {ctx.voice_client.source.title}!")
 
         if self.playlist.empty():
@@ -174,11 +228,11 @@ class Music(commands.Cog):
 
         # Start playing the next song from the playlist
         player = await YTDLSource.from_url(self.playlist.pop().url, volume=self.volume, loop=self.bot.loop)
+        self.music_state = MusicState.PLAY
         ctx.voice_client.play(
             player,
-            after=lambda _: asyncio.run_coroutine_threadsafe(self._next(ctx), self.bot.loop)
+            after=lambda _: asyncio.run_coroutine_threadsafe(self._play_next(ctx), self.bot.loop)
         )
-        self.music_state = MusicState.PLAY
         await ctx.send(f"Now playing: {player.title}")
 
     @commands.command()
@@ -200,8 +254,8 @@ class Music(commands.Cog):
         """
         if ctx.voice_client.is_playing():
             # Case: Bot does not play a song
-            ctx.voice_client.pause()
             self.music_state = MusicState.PAUSE
+            ctx.voice_client.pause()
             return await ctx.send(f"Paused: {ctx.voice_client.source.title}!")
 
         if ctx.voice_client.is_paused():
@@ -268,10 +322,10 @@ class Music(commands.Cog):
             - If author is not in the same voice channel as the bot, then a warning message will be sent
         """
         # Clear the playlist
-        self.playlist.clear()
         self.music_state = MusicState.CONNECT
+        self.playlist.clear()
 
-        if ctx.voice_client.is_playing() or ctx.voice_client.is_pausing():
+        if ctx.voice_client.is_playing() or ctx.voice_client.is_paused():
             # Case: Bot plays/pause a song
             ctx.voice_client.stop()
 
@@ -318,13 +372,13 @@ class Music(commands.Cog):
         if volume < 0 or volume > 100:
             return await ctx.send("Volume needs to be in between of 0 and 100!")
 
-        if self.volume != volume / 100:
+        if self.volume != volume:
             # Case: New volume is not the same as before
-            self.volume = volume / 100
-            ctx.voice_client.source.volume = self.volume
+            self.volume = volume
+            ctx.voice_client.source.volume = self.volume / 100
             return await ctx.send(f"Changed volume to {volume}!")
         # Case: New volume is the same as before
-        await ctx.send(f"Stayed with volume {volume}!")
+        await ctx.send(f"Stayed with volume {self.volume}!")
 
     @staticmethod
     async def _check_author_voice(ctx: commands.Context):
@@ -395,13 +449,13 @@ class Music(commands.Cog):
             commands.CommandError:
                 If the bot is not streaming (playing/pausing) and audio stream
         """
-        if not ctx.voice_client.is_playing() and not ctx.voice_client.is_pausing():
+        if not ctx.voice_client.is_playing() and not ctx.voice_client.is_paused():
             # Case: Bot does not play/pause any song
             await ctx.send("You need to play/pause a song, before using this command!")
             raise commands.CommandError("Bot does not play/pause any song!")
 
     @join.before_invoke
-    async def check_for_join(self, ctx: commands.Context):
+    async def before_join(self, ctx: commands.Context):
         """
         Checks for the join command before performing it.
 
@@ -415,7 +469,7 @@ class Music(commands.Cog):
         await Music._check_author_voice(ctx)
 
     @leave.before_invoke
-    async def check_for_leave(self, ctx: commands.Context):
+    async def before_leave(self, ctx: commands.Context):
         """
         Checks for the leave command before performing it.
 
@@ -432,7 +486,7 @@ class Music(commands.Cog):
         await Music._check_author_and_bot_voice(ctx)
 
     @add.before_invoke
-    async def check_for_add(self, ctx: commands.Context):
+    async def before_add(self, ctx: commands.Context):
         """
         Checks for the add command before performing it.
 
@@ -449,7 +503,7 @@ class Music(commands.Cog):
         await Music._check_author_and_bot_voice(ctx)
 
     @play.before_invoke
-    async def check_for_play(self, ctx: commands.Context):
+    async def before_play(self, ctx: commands.Context):
         """
         Checks for the play command before performing it.
 
@@ -466,7 +520,7 @@ class Music(commands.Cog):
         await Music._check_author_and_bot_voice(ctx)
 
     @pause.before_invoke
-    async def check_for_pause(self, ctx: commands.Context):
+    async def before_pause(self, ctx: commands.Context):
         """
         Checks for the pause command before performing it.
 
@@ -485,7 +539,7 @@ class Music(commands.Cog):
         await Music._check_bot_streaming(ctx)
 
     @skip.before_invoke
-    async def check_for_skip(self, ctx: commands.Context):
+    async def before_skip(self, ctx: commands.Context):
         """
         Checks for the skip command before performing it.
 
@@ -504,7 +558,7 @@ class Music(commands.Cog):
         await Music._check_bot_streaming(ctx)
 
     @remove.before_invoke
-    async def check_for_remove(self, ctx: commands.Context):
+    async def before_remove(self, ctx: commands.Context):
         """
         Checks for the remove command before performing it.
 
@@ -521,7 +575,7 @@ class Music(commands.Cog):
         await Music._check_author_and_bot_voice(ctx)
 
     @reset.before_invoke
-    async def check_for_reset(self, ctx: commands.Context):
+    async def before_reset(self, ctx: commands.Context):
         """
         Checks for the reset command before performing it.
 
@@ -538,7 +592,7 @@ class Music(commands.Cog):
         await Music._check_author_and_bot_voice(ctx)
 
     @show.before_invoke
-    async def check_for_show(self, ctx: commands.Context):
+    async def before_show(self, ctx: commands.Context):
         """
         Checks for the show command before performing it.
 
@@ -555,7 +609,7 @@ class Music(commands.Cog):
         await Music._check_author_and_bot_voice(ctx)
 
     @volume.before_invoke
-    async def check_for_volume(self, ctx: commands.Context):
+    async def before_volume(self, ctx: commands.Context):
         """
         Checks for the volume command before performing it.
 
