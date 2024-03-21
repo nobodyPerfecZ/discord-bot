@@ -108,7 +108,7 @@ class Music(commands.Cog):
     @commands.command()
     async def join(self, ctx: commands.Context):
         """
-        Joins to the current voice channel.
+        Joins to the current voice channel of the author.
 
         This command ensures that the bot is joining the current voice channel of the author.
 
@@ -286,7 +286,7 @@ class Music(commands.Cog):
     @commands.command()
     async def remove(self, ctx: commands.Context, n: int):
         """
-        Removes the first n songs from the playlist.
+        Removes the first n songs from the playlist (not included currently playing).
 
         This command ensures that the next n songs will be removed from the playlist.
 

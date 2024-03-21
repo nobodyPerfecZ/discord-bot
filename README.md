@@ -1,28 +1,23 @@
-# Project discordbot
+# discord-bot
 
-This project is about *creating a bot* for the discord server [Wixoss Gaming](https://discord.gg/sgzNMyRduF) with python and the library discordpy. The bot should have the following functionalities:
+`discord-bot` is a project where we want to build music bot for the discord server `Wixoss Gaming` to play the audio
+stream of a YouTube video given the link.
 
-##### The bot can (...) #####
-- []  automatically adds new members to the role **Genin** 
-- []  kick someone from the server with command: **!kick name**
-- []  kick all member in the same channel as you from the server with **!kick all**
-- []  add a member a random role if the user gets the questions right (like a Quiz)
-- []  move one specific member into your channel with **!move name**
-- []  move all member in the server in your channel with **!move all**
-- []  mute one specific member in your server with **!mute name**
-- []  mute all member in your server with **!mute all**
-- []  ban someone from your server with **!ban name**
-- []  remove a role from one member with **!remove name role**
-- []  remove all roles from one member with **!remove name all**
-- []  delete the latest message from one member with **!delete chat name**
-- []  delete all messages from one member with **!delete chat name all**
+The current supported commands are listed in the following table:
 
-#### Documentation for using the bot
-* placeholder
-* placeholder
-* placeholder
-* placeholder
+| Commands |                                                                               |
+|:---------|-------------------------------------------------------------------------------|
+| add      | Adds a song (YouTube URL) to the playlist.                                    |
+| join     | Joins to the current voice channel of the author.                             |
+| leave    | Leaves the voice channel.                                                     |
+| pause    | Pauses the current played song.                                               |
+| play     | Start playing the next song from the playlist.                                |
+| remove   | Removes the first n songs from the playlist (not included currently playing). |
+| reset    | Stops the current song and clears the playlist.                               |
+| show     | Displays the songs in the playlist (and currently played song).               |
+| skip     | Skips the current played song.                                                |
+| volume   | Changes the volume of the audio playback.                                     |
 
-#### Documentation about all used technologies
-* [Python](https://docs.python.org/3/) 
-* [DiscordPy](https://discordpy.readthedocs.io/en/latest/intro.html)
+## Contributing
+We welcome any contribution to this project. If you found any bugs or want to add a new feature, please open an issue 
+and submit a pull request for it.
