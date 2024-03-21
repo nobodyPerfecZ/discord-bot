@@ -30,13 +30,14 @@ ydl = YoutubeDL(ydl_options)
 logger = logging.getLogger('discord')
 
 
+# TODO: Add listener to disconnect the bot after 10 min of inactivity
+# TODO: Add listener to reset the bot after 20 min of inactivity
+
 class YTDLSource(discord.PCMVolumeTransformer):
     """
     Represents a YouTube audio source that can be played by a discord bot.
 
     This class allows to adjust the volume of the audio.
-
-    Attributes:
     """
 
     def __init__(self, source: AudioSource, *, data: dict[str, Any], volume: float = 0.5):
@@ -365,10 +366,13 @@ class Music(commands.Cog):
         if volume < 0 or volume > 100:
             return await ctx.send("Volume needs to be in between of 0 and 100!")
 
-        # Change the volume of the audio playback
-        self.volume = volume / 100
-        ctx.voice_client.source.volume = self.volume
-        await ctx.send(f"Changed volume to {volume}!")
+        if self.volume != volume / 100:
+            # Case: New volume is not the same as before
+            self.volume = volume / 100
+            ctx.voice_client.source.volume = self.volume
+            return await ctx.send(f"Changed volume to {volume}!")
+        # Case: New volume is the same as before
+        await ctx.send(f"Stayed with volume {volume}!")
 
     @staticmethod
     async def _check_author_voice(ctx: commands.Context):
