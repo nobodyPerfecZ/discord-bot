@@ -1,6 +1,6 @@
 # discord-bot
 
-`discord-bot` is a project where we want to build music bot for the discord server `Wixoss Gaming` to play the audio
+`discord-bot` is a project where we want to build a music bot for the discord server `Wixoss Gaming` to play the audio
 stream of a YouTube video given the link.
 
 The current supported commands are listed in the following table:
@@ -19,5 +19,5 @@ The current supported commands are listed in the following table:
 | volume   | Changes the volume of the audio playback.                                     |
 
 ## Contributing
-We welcome any contribution to this project. If you found any bugs or want to add a new feature, please open an issue 
-and submit a pull request for it.
+We welcome any contribution to this project. If you found any bugs, want to change a feature or to add a new feature, 
+please open an issue and submit a pull request for it.
