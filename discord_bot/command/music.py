@@ -1,114 +1,32 @@
 import asyncio
 import logging
-from asyncio import AbstractEventLoop
-from typing import Any
 
-import discord
-import yt_dlp.utils
-from discord import AudioSource
 from discord.ext import commands
-from yt_dlp import YoutubeDL
 
 from discord_bot.command.music_state import MusicState
+from discord_bot.transformer.ytdl_source import YTDLSource
 from discord_bot.util.playlist_manager import AudioFile, PlaylistManager
 from discord_bot.util.role import to_priority
-
-ffmpeg_options = {
-    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-    'options': '-vn',
-}
-
-ydl_options = {
-    "format": "bestaudio/best",
-    "extractaudio": True,
-    "noplaylist": True,
-    "skip_download": True,
-    "quiet": True,
-}
-ydl = YoutubeDL(ydl_options)
 
 logger = logging.getLogger('discord')
 
 
 # TODO: Add listener to disconnect the bot after 10 min of inactivity
 # TODO: Add listener to reset the bot after 20 min of inactivity
-
-class YTDLSource(discord.PCMVolumeTransformer):
-    """
-    Represents a YouTube audio source that can be played by a discord bot.
-
-    This class allows to adjust the volume of the audio.
-    """
-
-    def __init__(self, source: AudioSource, *, data: dict[str, Any], volume: float = 0.5):
-        super().__init__(source, volume)
-
-        self.data = data
-
-        self.title = data["title"]
-        self.url = data["url"]
-
-    @classmethod
-    async def from_url(cls, url: str, *, volume: float = 0.5, loop: AbstractEventLoop = None) -> "YTDLSource":
-        """
-        Construct a YTDLSource given the YouTube URL.
-
-        Args:
-            url (str):
-                The URL of the YouTube video
-
-            volume (float):
-                The volume of the YTDLSource
-
-            loop (AbstractEventLoop):
-                The event loop to start the audio connection in the background
-
-        Returns:
-            YTDLSource:
-                The audio source of the YouTube video
-        """
-        loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
-        audio_source = data["url"]
-
-        return cls(discord.FFmpegPCMAudio(audio_source, **ffmpeg_options), data=data, volume=volume)
-
-    @staticmethod
-    async def is_valid(url: str, loop: AbstractEventLoop = None) -> bool:
-        """
-        Checks whether the given YouTube URL is supported by YoutubeDL.
-
-        Args:
-            url (str):
-                The URL of the YouTube video
-
-            loop (AbstractEventLoop):
-                The event loop to start the audio connection in the background
-
-        Returns:
-            bool:
-                Returns True if the given url is supported, otherwise False
-        """
-        loop = loop or asyncio.get_event_loop()
-        try:
-            await loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
-            return True
-        except yt_dlp.utils.YoutubeDLError:
-            return False
-
-
 class Music(commands.Cog):
     """
     This class represents a suite of commands to control a music bot in a Discord Server.
     """
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: commands.Bot, volume: int = 50):
+        if volume < 0 or volume > 100:
+            raise ValueError("Volume needs to be in between of 0 and 100!")
         self.bot = bot
         self.playlist = PlaylistManager()
         self.music_state = MusicState.DISCONNECT
-        self.volume = 0.5
+        self.volume = volume / 100
 
-    async def next(self, ctx: commands.Context):
+    async def _next(self, ctx: commands.Context):
         """
         Plays the next song in the playlist.
 
@@ -128,7 +46,7 @@ class Music(commands.Cog):
 
         # Play the next song
         player = await YTDLSource.from_url(self.playlist.pop().url, volume=self.volume, loop=self.bot.loop)
-        voice_client.play(player, after=lambda _: asyncio.run_coroutine_threadsafe(self.next(ctx), self.bot.loop))
+        voice_client.play(player, after=lambda _: asyncio.run_coroutine_threadsafe(self._next(ctx), self.bot.loop))
         self.music_state = MusicState.PLAY
         await ctx.send(f"Now playing: {player.title}")
 
@@ -258,7 +176,7 @@ class Music(commands.Cog):
         player = await YTDLSource.from_url(self.playlist.pop().url, volume=self.volume, loop=self.bot.loop)
         ctx.voice_client.play(
             player,
-            after=lambda _: asyncio.run_coroutine_threadsafe(self.next(ctx), self.bot.loop)
+            after=lambda _: asyncio.run_coroutine_threadsafe(self._next(ctx), self.bot.loop)
         )
         self.music_state = MusicState.PLAY
         await ctx.send(f"Now playing: {player.title}")
