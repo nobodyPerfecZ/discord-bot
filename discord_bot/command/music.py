@@ -93,6 +93,7 @@ class Music(commands.Cog):
             return
 
         if self.playlist.empty():
+            self.music_state = MusicState.CONNECT
             return await ctx.send("Playlist is empty!")
 
         # Get the voice client
