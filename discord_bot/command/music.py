@@ -111,6 +111,10 @@ class Music(commands.Cog):
     async def next(self, ctx: commands.Context):
         """
         Plays the next song in the playlist.
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
         """
         if self.music_state != MusicState.PLAY and self.music_state != MusicState.PAUSE:
             # Case: Bot never played/paused a song before
@@ -139,6 +143,10 @@ class Music(commands.Cog):
             - If author is not in a voice channel, then a warning message will be sent
             - If bot is in another voice channel, then it will move to voice channel and stops playing music
             - If bot is already in the current voice channel, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
         """
         author_channel = ctx.author.voice.channel
         if ctx.voice_client is None:
@@ -171,6 +179,11 @@ class Music(commands.Cog):
 
         Unusual cases being treated:
             - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
         """
         channel = ctx.voice_client.channel
         await ctx.voice_client.disconnect(force=False)
@@ -191,6 +204,9 @@ class Music(commands.Cog):
               be sent
 
         Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
+
             url (str):
                 The URL of the YouTube video to be added to the playlist
         """
@@ -219,6 +235,10 @@ class Music(commands.Cog):
             - If bot is already playing songs, then a warning message will be sent
             - If bot is paused, then it will resume playing the current song
             - If playlist is empty, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
         """
         if ctx.voice_client.is_playing():
             # Case: Bot already plays music
@@ -255,6 +275,10 @@ class Music(commands.Cog):
             - If author is not in the same voice channel as the bot, then a warning message will be sent
             - If bot does not play/pause any song, then a warning message will be sent
             - If bot already pauses a song, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
         """
         if ctx.voice_client.is_playing():
             # Case: Bot does not play a song
@@ -278,6 +302,10 @@ class Music(commands.Cog):
             - If bot is not in a voice channel, then a warning message will be sent
             - If author is not in the same voice channel as the bot, then a warning message will be sent
             - If bot does not play/pause any song, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
         """
         # Stop playing the current music (removes the audio stream and skip to the next one)
         ctx.voice_client.stop()
@@ -295,6 +323,9 @@ class Music(commands.Cog):
             - If playlist does not have at least n songs, then a warning message will be sent
 
         Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
+
             n (int):
                 The number of next songs to be removed
         """
@@ -360,6 +391,9 @@ class Music(commands.Cog):
             - If volume is not in (0, 100) then a warning message will be sent.
 
         Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
+
             volume (int):
                 The volume of the audio playback
         """
@@ -450,28 +484,83 @@ class Music(commands.Cog):
 
     @join.before_invoke
     async def check_for_join(self, ctx: commands.Context):
+        """
+        Checks for the join command before performing it.
+
+         Unusual cases being treated:
+            - If author is not in a voice channel, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
+        """
         await Music._check_author_voice(ctx)
 
     @leave.before_invoke
     async def check_for_leave(self, ctx: commands.Context):
+        """
+        Checks for the leave command before performing it.
+
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
+        """
         await Music._check_author_voice(ctx)
         await Music._check_bot_voice(ctx)
         await Music._check_author_and_bot_voice(ctx)
 
     @add.before_invoke
     async def check_for_add(self, ctx: commands.Context):
+        """
+        Checks for the add command before performing it.
+
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
+        """
         await Music._check_author_voice(ctx)
         await Music._check_bot_voice(ctx)
         await Music._check_author_and_bot_voice(ctx)
 
     @play.before_invoke
     async def check_for_play(self, ctx: commands.Context):
+        """
+        Checks for the play command before performing it.
+
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
+        """
         await Music._check_author_voice(ctx)
         await Music._check_bot_voice(ctx)
         await Music._check_author_and_bot_voice(ctx)
 
     @pause.before_invoke
     async def check_for_pause(self, ctx: commands.Context):
+        """
+        Checks for the pause command before performing it.
+
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+            - If bot does not play/pause any song, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
+        """
         await Music._check_author_voice(ctx)
         await Music._check_bot_voice(ctx)
         await Music._check_author_and_bot_voice(ctx)
@@ -479,6 +568,18 @@ class Music(commands.Cog):
 
     @skip.before_invoke
     async def check_for_skip(self, ctx: commands.Context):
+        """
+        Checks for the skip command before performing it.
+
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+            - If bot does not play/pause any song, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
+        """
         await Music._check_author_voice(ctx)
         await Music._check_bot_voice(ctx)
         await Music._check_author_and_bot_voice(ctx)
@@ -486,24 +587,69 @@ class Music(commands.Cog):
 
     @remove.before_invoke
     async def check_for_remove(self, ctx: commands.Context):
+        """
+        Checks for the remove command before performing it.
+
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
+        """
         await Music._check_author_voice(ctx)
         await Music._check_bot_voice(ctx)
         await Music._check_author_and_bot_voice(ctx)
 
     @reset.before_invoke
     async def check_for_reset(self, ctx: commands.Context):
+        """
+        Checks for the reset command before performing it.
+
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
+        """
         await Music._check_author_voice(ctx)
         await Music._check_bot_voice(ctx)
         await Music._check_author_and_bot_voice(ctx)
 
     @show.before_invoke
     async def check_for_show(self, ctx: commands.Context):
+        """
+        Checks for the show command before performing it.
+
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
+        """
         await Music._check_author_voice(ctx)
         await Music._check_bot_voice(ctx)
         await Music._check_author_and_bot_voice(ctx)
 
     @volume.before_invoke
     async def check_for_volume(self, ctx: commands.Context):
+        """
+        Checks for the volume command before performing it.
+
+        Unusual cases being treated:
+            - If bot is not in a voice channel, then a warning message will be sent
+            - If author is not in the same voice channel as the bot, then a warning message will be sent
+            - If bot does not play/pause any song, then a warning message will be sent
+
+        Args:
+            ctx (commands.Context):
+                The discord context (will be added automatically)
+        """
         await Music._check_author_voice(ctx)
         await Music._check_bot_voice(ctx)
         await Music._check_author_and_bot_voice(ctx)
