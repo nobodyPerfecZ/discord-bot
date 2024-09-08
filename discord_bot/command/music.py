@@ -1,14 +1,37 @@
 import asyncio
 import logging
+from enum import IntEnum
 
 from discord.ext import commands, tasks
 
-from discord_bot.command.music_state import MusicState
-from discord_bot.transformer.ytdl_source import YTDLSource
-from discord_bot.util.playlist_manager import AudioFile, PlaylistManager
-from discord_bot.util.role import to_priority
+from discord_bot.transformer import YTDLSource
+from discord_bot.util import AudioFile, PlaylistManager, to_priority
 
-logger = logging.getLogger('discord')
+logger = logging.getLogger("discord")
+
+
+class MusicState(IntEnum):
+    """
+    This class represents different states of an audio player.
+
+    Attributes:
+        DISCONNECT (int):
+            The audio player is disconnected from the voice channel
+
+        CONNECT (int):
+            The audio player is connected to the voice channel (and does not play/pause any audio stream)
+
+        PLAY (int):
+            The audioplayer is playing an audio stream
+
+        PAUSE (int):
+            The audio player is pausing an audio stream
+    """
+
+    DISCONNECT = 1
+    CONNECT = 2
+    PLAY = 3
+    PAUSE = 4
 
 
 class Music(commands.Cog):
@@ -27,15 +50,14 @@ class Music(commands.Cog):
     """
 
     def __init__(
-            self,
-            bot: commands.Bot,
-            disconnect_timeout: float = 600,
-            volume: int = 50
+        self, bot: commands.Bot, disconnect_timeout: float = 600, volume: int = 50
     ):
         if volume < 0 or volume > 100:
             raise ValueError("Volume needs to be in between of 0 and 100!")
         if disconnect_timeout < 0:
-            raise ValueError("Disconnect timeout needs to be higher than or equal to 0!")
+            raise ValueError(
+                "Disconnect timeout needs to be higher than or equal to 0!"
+            )
 
         self.bot = bot
         self.playlist = PlaylistManager()
@@ -54,9 +76,9 @@ class Music(commands.Cog):
         After the bot reached disconnect_timeout it will leave the server and resets its playlist and volume.
         """
         if (
-                self.disconnect_timeout == 0 or
-                self.music_state == MusicState.DISCONNECT or
-                self.music_state == MusicState.PLAY
+            self.disconnect_timeout == 0
+            or self.music_state == MusicState.DISCONNECT
+            or self.music_state == MusicState.PLAY
         ):
             # Case: Disable the background task
             self.disconnect_time = 0
@@ -88,7 +110,10 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context (will be added automatically)
         """
-        if self.music_state == MusicState.DISCONNECT or self.music_state == MusicState.CONNECT:
+        if (
+            self.music_state == MusicState.DISCONNECT
+            or self.music_state == MusicState.CONNECT
+        ):
             # Case: Bot never played/paused a song before
             return
 
@@ -100,8 +125,15 @@ class Music(commands.Cog):
         voice_client = ctx.voice_client
 
         # Play the next song
-        player = await YTDLSource.from_url(self.playlist.pop().url, volume=self.volume, loop=self.bot.loop)
-        voice_client.play(player, after=lambda _: asyncio.run_coroutine_threadsafe(self._play_next(ctx), self.bot.loop))
+        player = await YTDLSource.from_url(
+            self.playlist.pop().url, volume=self.volume, loop=self.bot.loop
+        )
+        voice_client.play(
+            player,
+            after=lambda _: asyncio.run_coroutine_threadsafe(
+                self._play_next(ctx), self.bot.loop
+            ),
+        )
         self.music_state = MusicState.PLAY
         await ctx.send(f"Now playing: {player.title}")
 
@@ -215,7 +247,9 @@ class Music(commands.Cog):
         """
         if ctx.voice_client.is_playing():
             # Case: Bot already plays music
-            return await ctx.send(f"Currently playing: {ctx.voice_client.source.title}!")
+            return await ctx.send(
+                f"Currently playing: {ctx.voice_client.source.title}!"
+            )
 
         if ctx.voice_client.is_paused():
             # Case: Bot is paused
@@ -228,11 +262,15 @@ class Music(commands.Cog):
             return await ctx.send("Playlist is empty!")
 
         # Start playing the next song from the playlist
-        player = await YTDLSource.from_url(self.playlist.pop().url, volume=self.volume, loop=self.bot.loop)
+        player = await YTDLSource.from_url(
+            self.playlist.pop().url, volume=self.volume, loop=self.bot.loop
+        )
         self.music_state = MusicState.PLAY
         ctx.voice_client.play(
             player,
-            after=lambda _: asyncio.run_coroutine_threadsafe(self._play_next(ctx), self.bot.loop)
+            after=lambda _: asyncio.run_coroutine_threadsafe(
+                self._play_next(ctx), self.bot.loop
+            ),
         )
         await ctx.send(f"Now playing: {player.title}")
 
@@ -306,7 +344,9 @@ class Music(commands.Cog):
             return await ctx.send("Playlist is empty!")
 
         if n <= 0 or n > len(self.playlist):
-            return await ctx.send(f"n should be in between of 1 and {len(self.playlist)}!")
+            return await ctx.send(
+                f"n should be in between of 1 and {len(self.playlist)}!"
+            )
 
         await self.bot.loop.run_in_executor(None, lambda: self.playlist.remove(n=n))
         return await ctx.send(f"{n} songs are removed from the playlist!")
@@ -396,7 +436,9 @@ class Music(commands.Cog):
         """
         if ctx.author.voice is None:
             # Case: Author is not in a voice channel
-            await ctx.send("You need to be connected to a voice channel, before using this command!")
+            await ctx.send(
+                "You need to be connected to a voice channel, before using this command!"
+            )
             raise commands.CommandError("Author is not connected to a voice channel!")
 
     @staticmethod
@@ -414,7 +456,9 @@ class Music(commands.Cog):
         """
         if ctx.voice_client is None:
             # Case: Bot is not in a voice channel
-            await ctx.send("I need to be connected to a voice channel, before using this command!")
+            await ctx.send(
+                "I need to be connected to a voice channel, before using this command!"
+            )
             raise commands.CommandError("Bot is not connected to a voice channel!")
 
     @staticmethod
@@ -435,7 +479,9 @@ class Music(commands.Cog):
             await ctx.send(
                 "You need to be connected to the same voice channel as me, before using this command!"
             )
-            raise commands.CommandError("Author and bot are not in the same voice channel!")
+            raise commands.CommandError(
+                "Author and bot are not in the same voice channel!"
+            )
 
     @staticmethod
     async def _check_bot_streaming(ctx: commands.Context):

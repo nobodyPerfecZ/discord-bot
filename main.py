@@ -1,18 +1,21 @@
 import asyncio
 import logging.handlers
+import os
 
 import discord
 from discord.ext import commands
 
-from discord_bot.command.music import Music
+from discord_bot.command import Music
 
 
 async def main(client: commands.Bot, **kwargs):
+    """Starting point of the bot."""
     async with client:
         await client.add_cog(Music(client, **kwargs))
         await client.start(
-            token="NTkzMDU4MTI5NzIyMjEyMzY0.GV6RIa.0eC8FvlomgpOKk1xDOEPsDyCp8X_MglWZULc7s",
+            token=os.environ["__DISCORD_API_KEY__"],
         )
+
 
 if __name__ == "__main__":
     # Enable logging of the bot

@@ -1,3 +1,4 @@
+# Wrapper from roles to priority value (lower values represents higher priorities).
 roles_to_priority_wrapper = {
     "DJ": 0,
     "#ANBU#": 1,

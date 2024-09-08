@@ -1,17 +1,13 @@
 import unittest
 
-from discord_bot.util.role import to_priority
+from discord_bot.util import to_priority
 
 
 class TestRole(unittest.TestCase):
-    """
-    Tests all methods under role.py
-    """
+    """Tests all methods under role.py."""
 
     def test_to_priority(self):
-        """
-        Tests the __init__() method.
-        """
+        """Tests the __init__() method."""
         priority1 = to_priority("DJ", default=10)
         priority2 = to_priority("#ANBU#", default=10)
         priority3 = to_priority("Kage", default=10)
@@ -33,5 +29,5 @@ class TestRole(unittest.TestCase):
         self.assertEqual(10, priority9)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

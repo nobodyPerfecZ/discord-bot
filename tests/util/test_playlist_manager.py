@@ -1,22 +1,20 @@
 import unittest
 
-from discord_bot.util.playlist_manager import AudioFile, PlaylistManager
+from discord_bot.util import AudioFile, PlaylistManager
 
 
 class TestPlaylistManager(unittest.TestCase):
-    """
-    Tests the class PlaylistManager.
-    """
+    """Tests the class PlaylistManager."""
 
     def setUp(self):
         self.maxlen = 10
         self.playlist = PlaylistManager(maxlen=self.maxlen)
-        self.audio = AudioFile(priority=1, url="https://www.youtube.com/watch?v=BaW_jenozKc")
+        self.audio = AudioFile(
+            priority=1, url="https://www.youtube.com/watch?v=BaW_jenozKc"
+        )
 
     def test_empty(self):
-        """
-        Tests the method empty().
-        """
+        """Tests the method empty()."""
         # Check if the playlist is empty
         self.assertTrue(self.playlist.empty())
 
@@ -27,9 +25,7 @@ class TestPlaylistManager(unittest.TestCase):
         self.assertFalse(self.playlist.empty())
 
     def test_full(self):
-        """
-        Tests the method full().
-        """
+        """Tests the method full()."""
         # Check if the playlist is not full
         self.assertFalse(self.playlist.full())
 
@@ -41,9 +37,7 @@ class TestPlaylistManager(unittest.TestCase):
         self.assertTrue(self.playlist.full())
 
     def test_clear(self):
-        """
-        Tests the method clear().
-        """
+        """Tests the method clear()."""
         # Fill in the playlist to the maximum allowed size
         for _ in range(self.maxlen):
             self.playlist.add(self.audio)
@@ -55,9 +49,7 @@ class TestPlaylistManager(unittest.TestCase):
         self.assertEqual(0, len(self.playlist))
 
     def test_add(self):
-        """
-        Tests the method add().
-        """
+        """Tests the method add()."""
         self.playlist.add(self.audio)
 
         # Check some properties
@@ -65,9 +57,7 @@ class TestPlaylistManager(unittest.TestCase):
         self.assertEqual(self.audio, self.playlist.pop())
 
     def test_pop(self):
-        """
-        Tests the method pop() with return_stream=False
-        """
+        """Tests the method pop() with return_stream=False."""
         for _ in range(self.maxlen):
             self.playlist.add(self.audio)
 
@@ -76,10 +66,8 @@ class TestPlaylistManager(unittest.TestCase):
         self.assertEqual(self.audio, audio)
 
     def test_remove(self):
-        """
-        Tests the method remove()
-        """
-        for i in range(self.maxlen):
+        """Tests the method remove()."""
+        for _ in range(self.maxlen):
             self.playlist.add(self.audio)
 
         self.playlist.remove(n=self.maxlen)
@@ -87,5 +75,5 @@ class TestPlaylistManager(unittest.TestCase):
         self.assertEqual(0, len(self.playlist))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

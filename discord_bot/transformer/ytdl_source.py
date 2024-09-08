@@ -4,14 +4,14 @@ from typing import Any
 
 import discord
 import yt_dlp
-from discord import AudioSource
-from yt_dlp import YoutubeDL
 
+# Options for ffmpeg
 ffmpeg_options = {
     "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
     "options": "-vn",
 }
 
+# Options for youtube-dl
 ydl_options = {
     "format": "bestaudio/best",
     "extractaudio": True,
@@ -19,7 +19,7 @@ ydl_options = {
     "skip_download": True,
     "quiet": True,
 }
-ydl = YoutubeDL(ydl_options)
+ydl = yt_dlp.YoutubeDL(ydl_options)
 
 
 class YTDLSource(discord.PCMVolumeTransformer):
@@ -39,7 +39,9 @@ class YTDLSource(discord.PCMVolumeTransformer):
             The volume of the audio source
     """
 
-    def __init__(self, source: AudioSource, *, data: dict[str, Any], volume: int = 50):
+    def __init__(
+        self, source: discord.AudioSource, *, data: dict[str, Any], volume: int = 50
+    ):
         super().__init__(original=source, volume=volume / 100)
 
         self.data = data
@@ -47,7 +49,13 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.url = data["url"]
 
     @classmethod
-    async def from_url(cls, url: str, *, volume: int = 50, loop: AbstractEventLoop = None) -> "YTDLSource":
+    async def from_url(
+        cls,
+        url: str,
+        *,
+        volume: int = 50,
+        loop: AbstractEventLoop = None,
+    ) -> "YTDLSource":
         """
         Construct a YTDLSource given the YouTube URL.
 
@@ -66,10 +74,16 @@ class YTDLSource(discord.PCMVolumeTransformer):
                 The audio source of the YouTube video
         """
         loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
+        data = await loop.run_in_executor(
+            None, lambda: ydl.extract_info(url, download=False)
+        )
         audio_source = data["url"]
 
-        return cls(discord.FFmpegPCMAudio(audio_source, **ffmpeg_options), data=data, volume=volume)
+        return cls(
+            discord.FFmpegPCMAudio(audio_source, **ffmpeg_options),
+            data=data,
+            volume=volume,
+        )
 
     @staticmethod
     async def is_valid(url: str, loop: AbstractEventLoop = None) -> bool:
@@ -89,7 +103,9 @@ class YTDLSource(discord.PCMVolumeTransformer):
         """
         loop = loop or asyncio.get_event_loop()
         try:
-            await loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
+            await loop.run_in_executor(
+                None, lambda: ydl.extract_info(url, download=False)
+            )
             return True
         except yt_dlp.utils.YoutubeDLError:
             return False

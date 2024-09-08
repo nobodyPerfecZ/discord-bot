@@ -8,8 +8,7 @@ class AudioFile:
 
     Attributes:
         priority (int):
-            The priority of the audio file.
-            Lower values represents higher priorities
+            The priority of the audio file (lower values represents higher priorities)
 
         url (str):
             The YouTube url to extract the audio file
@@ -45,6 +44,7 @@ class PlaylistManager:
     """
     This class manages a playlist of audio files.
     """
+
     # TODO: Add an optional parameter to decide if you want to use a priority queue or normal queue
 
     def __init__(self, maxlen: Optional[int] = None):
@@ -97,7 +97,9 @@ class PlaylistManager:
                 If the maximum amount of audio files are already stored
         """
         if self._maxlen is not None and len(self) >= self._maxlen:
-            raise ValueError("The playlist has reached the maximum limit of audio sources!")
+            raise ValueError(
+                "The playlist has reached the maximum limit of audio sources!"
+            )
         heapq.heappush(self._playlist, audio)
 
     def pop(self) -> AudioFile:
