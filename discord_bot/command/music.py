@@ -634,7 +634,7 @@ class Music(commands.Cog):
             # Case: New volume is not the same as before
             self.curr_volume = volume
             ctx.voice_client.source.volume = self.curr_volume / 100
-            return await ctx.send(f"✅ Changed volume to {self.curr_volume}!")
+            return await ctx.send(f"✅ Changing volume to {self.curr_volume}!")
         # Case: New volume is the same as before
         await ctx.send(f"⚠️ Already using volume {self.curr_volume}!")
 
