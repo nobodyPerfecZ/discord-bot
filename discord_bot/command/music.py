@@ -636,7 +636,7 @@ class Music(commands.Cog):
             ctx.voice_client.source.volume = self.curr_volume / 100
             return await ctx.send(f"✅ Changed volume to {self.curr_volume}!")
         # Case: New volume is the same as before
-        await ctx.send(f"⚠️ Already used volume {self.curr_volume}!")
+        await ctx.send(f"⚠️ Already using volume {self.curr_volume}!")
 
     @volume.before_invoke
     async def before_volume(self, ctx: commands.Context):
