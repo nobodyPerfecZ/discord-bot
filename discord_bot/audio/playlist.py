@@ -8,6 +8,7 @@ import yt_dlp
 # Options for youtube-dl
 ydl_options = {
     "format": "bestaudio/best",
+    "keepvideo": False,
     "extractaudio": True,
     "noplaylist": True,
     "skip_download": True,
