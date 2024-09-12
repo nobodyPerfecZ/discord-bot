@@ -1,7 +1,7 @@
-from discord_bot.transformer.ytdl_source import YTDLSource
+from discord_bot.transformer.ytdl_transformer import YTDLVolumeTransformer
 
-del ytdl_source  # type: ignore[name-defined] # noqa: F821
+del ytdl_transformer  # type: ignore[name-defined] # noqa: F821
 
 __all__ = [
-    "YTDLSource",
+    "YTDLVolumeTransformer",
 ]

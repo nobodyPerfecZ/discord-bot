@@ -2,10 +2,13 @@ import asyncio
 import logging
 from enum import IntEnum
 
+import discord
+import yt_dlp
 from discord.ext import commands, tasks
 
-from discord_bot.transformer import YTDLSource
-from discord_bot.util import AudioFile, PlaylistManager, to_priority
+from discord_bot.audio import AudioSource, Playlist
+from discord_bot.member.role import get_highest_priority
+from discord_bot.transformer import YTDLVolumeTransformer
 
 logger = logging.getLogger("discord")
 
@@ -42,7 +45,7 @@ class Music(commands.Cog):
         bot (commands.Bot):
             The discord client to handle the commands
 
-        disconnect_timeout (float):
+        disconnect_timeout (int):
             The time in seconds, where the bot leaves the server and resets its playlist
 
         volume (int):
@@ -50,7 +53,10 @@ class Music(commands.Cog):
     """
 
     def __init__(
-        self, bot: commands.Bot, disconnect_timeout: float = 600, volume: int = 50
+        self,
+        bot: commands.Bot,
+        disconnect_timeout: int = 600,
+        volume: int = 50,
     ):
         if volume < 0 or volume > 100:
             raise ValueError("Volume needs to be in between of 0 and 100!")
@@ -60,12 +66,12 @@ class Music(commands.Cog):
             )
 
         self.bot = bot
-        self.playlist = PlaylistManager()
+        self.playlist = Playlist()
         self.music_state = MusicState.DISCONNECT
         self.disconnect_timeout = disconnect_timeout
         self.disconnect_time = 0
         self.start_volume = volume
-        self.volume = volume
+        self.curr_volume = volume
         self.disconnect.start()
 
     @staticmethod
@@ -148,7 +154,7 @@ class Music(commands.Cog):
             await ctx.send("You need to play/pause a song, before using this command!")
             raise commands.CommandError("Bot does not play/pause any song!")
 
-    @tasks.loop(seconds=30.0)
+    @tasks.loop(seconds=30)
     async def disconnect(self):
         """
         Background Tasks to handle the disconnect timeout.
@@ -177,7 +183,7 @@ class Music(commands.Cog):
             self.playlist.clear()
 
             # Set the volume to standard
-            self.volume = self.start_volume
+            self.curr_volume = self.start_volume
 
             # Reset the disconnect time
             self.disconnect_time = 0
@@ -205,13 +211,15 @@ class Music(commands.Cog):
         voice_client = ctx.voice_client
 
         # Play the next song
-        player = await YTDLSource.from_url(
-            self.playlist.pop().url, volume=self.volume, loop=self.bot.loop
+        player = YTDLVolumeTransformer.from_audio_source(
+            audio_source=self.playlist.pop(),
+            volume=self.curr_volume,
         )
         voice_client.play(
             player,
             after=lambda _: asyncio.run_coroutine_threadsafe(
-                self._play_next(ctx), self.bot.loop
+                coro=self._play_next(ctx),
+                loop=self.bot.loop,
             ),
         )
         self.music_state = MusicState.PLAY
@@ -326,17 +334,22 @@ class Music(commands.Cog):
             url (str):
                 The URL of the YouTube video to be added to the playlist
         """
-        if not await YTDLSource.is_valid(url):
-            # Case: The url is not supported
+        # Get the highest priority (lowest value) of the author's roles
+        priority = get_highest_priority(ctx.author.roles)
+
+        # Get the audio source from the given url
+        try:
+            audio_source = await AudioSource.from_url(
+                yt_url=url,
+                priority=priority,
+                loop=self.bot.loop,
+            )
+        except yt_dlp.utils.YoutubeDLError:
             return await ctx.send(f"Your given url {url} is not supported!")
 
-        # Create the audio file and assign it with the highest priority
-        priority = min([to_priority(role.name) for role in ctx.author.roles])
-        audio_file = AudioFile(priority=priority, url=url)
-
         # Add the audio file to the playlist
-        self.playlist.add(audio_file)
-        await ctx.send(f"Added to the playlist: {url}!")
+        self.playlist.add(audio_source)
+        await ctx.send(f"Added to the playlist: {audio_source.title}!")
 
     @add.before_invoke
     async def before_add(self, ctx: commands.Context):
@@ -390,14 +403,15 @@ class Music(commands.Cog):
             return await ctx.send("Playlist is empty!")
 
         # Start playing the next song from the playlist
-        player = await YTDLSource.from_url(
-            self.playlist.pop().url, volume=self.volume, loop=self.bot.loop
+        player = YTDLVolumeTransformer.from_audio_source(
+            audio_source=self.playlist.pop(),
+            volume=self.curr_volume,
         )
         self.music_state = MusicState.PLAY
         ctx.voice_client.play(
             player,
             after=lambda _: asyncio.run_coroutine_threadsafe(
-                self._play_next(ctx), self.bot.loop
+                coro=self._play_next(ctx), loop=self.bot.loop
             ),
         )
         await ctx.send(f"Now playing: {player.title}")
@@ -600,15 +614,23 @@ class Music(commands.Cog):
             - If bot is not in a voice channel, then a warning message will be sent
             - If author is not in the same voice channel as the bot, then a warning message will be sent
         """
-        summary = "Playlist:\n"
-        if ctx.voice_client.is_playing() or ctx.voice_client.is_paused():
-            summary += f"Currently playing: {ctx.voice_client.source.title}\n"
-        for i, audio in enumerate(self.playlist, 1):
-            summary += f"{i}. {str(audio)}\n"
+        embed = discord.Embed(title="🎶 Playlist 🎶", color=discord.Color.blue())
 
-        if summary == "Playlist:\n":
-            return await ctx.send("Playlist is empty!")
-        await ctx.send(summary)
+        if ctx.voice_client.is_playing() or ctx.voice_client.is_paused():
+            # Case: Bot plays/pause a song
+            embed.add_field(
+                name=f"🎶 {ctx.voice_client.source.title}",
+                value=ctx.voice_client.source.yt_url,
+            )
+
+        for i, audio_source in enumerate(self.playlist, 1):
+            embed.add_field(
+                name=f"{i}. {audio_source.title}",
+                value=audio_source.yt_url,
+                inline=False,
+            )
+
+        await ctx.send(embed=embed)
 
     @show.before_invoke
     async def before_show(self, ctx: commands.Context):
@@ -647,13 +669,13 @@ class Music(commands.Cog):
         if volume < 0 or volume > 100:
             return await ctx.send("Volume needs to be in between of 0 and 100!")
 
-        if self.volume != volume:
+        if self.curr_volume != volume:
             # Case: New volume is not the same as before
-            self.volume = volume
-            ctx.voice_client.source.volume = self.volume / 100
+            self.curr_volume = volume
+            ctx.voice_client.source.volume = self.curr_volume / 100
             return await ctx.send(f"Changed volume to {volume}!")
         # Case: New volume is the same as before
-        await ctx.send(f"Stayed with volume {self.volume}!")
+        await ctx.send(f"Stayed with volume {self.curr_volume}!")
 
     @volume.before_invoke
     async def before_volume(self, ctx: commands.Context):
