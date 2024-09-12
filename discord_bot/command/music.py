@@ -76,82 +76,40 @@ class Music(commands.Cog):
 
     @staticmethod
     async def _check_author_voice(ctx: commands.Context):
-        """
-        Raises an error if the author is not in a voice channel.
-
-        Args:
-            ctx (commands.Context):
-                The discord context
-
-        Raises:
-            commands.CommandError:
-                If the author is not in a voice channel
-        """
+        """Raises an error if the author is not in a voice channel."""
         if ctx.author.voice is None:
             # Case: Author is not in a voice channel
-            await ctx.send(
-                "You need to be connected to a voice channel, before using this command!"
-            )
+            await ctx.send("❌ Please join a voice channel, before using this command!")
             raise commands.CommandError("Author is not connected to a voice channel!")
 
     @staticmethod
     async def _check_bot_voice(ctx: commands.Context):
-        """
-        Raises an error if the bot is not in a voice channel.
-
-        Args:
-            ctx (commands.Context):
-                The discord context
-
-        Raises:
-            commands.CommandError:
-                If the bot is not in a voice channel
-        """
+        """Raises an error if the bot is not in a voice channel."""
         if ctx.voice_client is None:
             # Case: Bot is not in a voice channel
             await ctx.send(
-                "I need to be connected to a voice channel, before using this command!"
+                "❌ Please connect me to a voice channel, before using this command!"
             )
             raise commands.CommandError("Bot is not connected to a voice channel!")
 
     @staticmethod
     async def _check_author_and_bot_voice(ctx: commands.Context):
-        """
-        Raises an error if the author and the bot are not in the same voice channel.
-
-        Args:
-            ctx (commands.Context):
-                The discord context
-
-        Raises:
-            commands.CommandError:
-                If the author and the bot are not in the same voice channel
-        """
+        """Raises an error if the author and the bot are not in the same voice channel."""
         if ctx.author.voice.channel != ctx.voice_client.channel:
             # Case: Author is not in a voice channel
             await ctx.send(
-                "You need to be connected to the same voice channel as me, before using this command!"
+                "❌ Please join to the same voice channel as me, before using this command!"
             )
             raise commands.CommandError(
-                "Author and bot are not in the same voice channel!"
+                "Author and Bot are not in the same voice channel!"
             )
 
     @staticmethod
     async def _check_bot_streaming(ctx: commands.Context):
-        """
-        Raises an error if the bot is not streaming (playing/pausing) and audio stream.
-
-        Args:
-            ctx (commands.Context):
-                The discord context
-
-        Raises:
-            commands.CommandError:
-                If the bot is not streaming (playing/pausing) and audio stream
-        """
+        """Raises an error if the bot is not streaming (playing/pausing) and audio stream."""
         if not ctx.voice_client.is_playing() and not ctx.voice_client.is_paused():
             # Case: Bot does not play/pause any song
-            await ctx.send("You need to play/pause a song, before using this command!")
+            await ctx.send("❌ Please play a song, before using this command!")
             raise commands.CommandError("Bot does not play/pause any song!")
 
     @tasks.loop(seconds=30)
@@ -205,7 +163,7 @@ class Music(commands.Cog):
 
         if self.playlist.empty():
             self.music_state = MusicState.CONNECT
-            return await ctx.send("Playlist is empty!")
+            return await ctx.send("⚠️ The playlist no longer contains any songs!")
 
         # Get the voice client
         voice_client = ctx.voice_client
@@ -223,7 +181,7 @@ class Music(commands.Cog):
             ),
         )
         self.music_state = MusicState.PLAY
-        await ctx.send(f"Now playing: {player.title}")
+        await ctx.send(f"✅ Next playing {player.title}!")
 
     @commands.command(aliases=["Join"])
     async def join(self, ctx: commands.Context):
@@ -246,13 +204,13 @@ class Music(commands.Cog):
             # Case: Bot is not in a voice channel
             self.music_state = MusicState.CONNECT
             await author_channel.connect()
-            return await ctx.send(f"Moved to {author_channel}!")
+            return await ctx.send(f"✅ Moved to {author_channel}!")
         else:
             # Case: Bot is in a voice channel
             bot_channel = ctx.voice_client.channel
             if author_channel == bot_channel:
                 # Case: Bot is in the same voice channel as the author
-                return await ctx.send(f"Stayed in {bot_channel}!")
+                return await ctx.send(f"⚠️ Stayed in {bot_channel}!")
 
             # Case: Bot is not in the same voice channel as the author
             if ctx.voice_client.is_playing():
@@ -261,7 +219,7 @@ class Music(commands.Cog):
                 ctx.voice_client.pause()
 
             await ctx.voice_client.move_to(author_channel)
-            return await ctx.send(f"Moved from {bot_channel} to {author_channel}!")
+            return await ctx.send(f"✅ Moved from {bot_channel} to {author_channel}!")
 
     @join.before_invoke
     async def before_join(self, ctx: commands.Context):
@@ -295,7 +253,7 @@ class Music(commands.Cog):
         channel = ctx.voice_client.channel
         self.music_state = MusicState.DISCONNECT
         await ctx.voice_client.disconnect(force=False)
-        return await ctx.send(f"Left {channel}!")
+        return await ctx.send(f"✅ Left {channel}!")
 
     @leave.before_invoke
     async def before_leave(self, ctx: commands.Context):
@@ -315,7 +273,7 @@ class Music(commands.Cog):
         await Music._check_author_and_bot_voice(ctx)
 
     @commands.command(aliases=["Add"])
-    async def add(self, ctx: commands.Context, *, url: str):
+    async def add(self, ctx: commands.Context, url: str):
         """
         Adds a song (YouTube URL) to the playlist.
 
@@ -345,11 +303,11 @@ class Music(commands.Cog):
                 loop=self.bot.loop,
             )
         except yt_dlp.utils.YoutubeDLError:
-            return await ctx.send(f"Your given url {url} is not supported!")
+            return await ctx.send(f"❌ Please try a different URL than {url}!")
 
         # Add the audio file to the playlist
         self.playlist.add(audio_source)
-        await ctx.send(f"Added to the playlist: {audio_source.title}!")
+        await ctx.send(f"✅ Added {audio_source.title} to the playlist!")
 
     @add.before_invoke
     async def before_add(self, ctx: commands.Context):
@@ -388,19 +346,19 @@ class Music(commands.Cog):
         """
         if ctx.voice_client.is_playing():
             # Case: Bot already plays music
-            return await ctx.send(
-                f"Currently playing: {ctx.voice_client.source.title}!"
-            )
+            return await ctx.send(f"⚠️ Already playing {ctx.voice_client.source.title}!")
 
         if ctx.voice_client.is_paused():
             # Case: Bot is paused
             self.music_state = MusicState.PLAY
             ctx.voice_client.resume()
-            return await ctx.send(f"Resume playing: {ctx.voice_client.source.title}!")
+            return await ctx.send(f"✅ Resuming {ctx.voice_client.source.title}!")
 
         if self.playlist.empty():
             # Case: There is no music in the playlist
-            return await ctx.send("Playlist is empty!")
+            return await ctx.send(
+                "❌ Please add a song to the playlist, before using this command!"
+            )
 
         # Start playing the next song from the playlist
         player = YTDLVolumeTransformer.from_audio_source(
@@ -411,10 +369,11 @@ class Music(commands.Cog):
         ctx.voice_client.play(
             player,
             after=lambda _: asyncio.run_coroutine_threadsafe(
-                coro=self._play_next(ctx), loop=self.bot.loop
+                coro=self._play_next(ctx),
+                loop=self.bot.loop,
             ),
         )
-        await ctx.send(f"Now playing: {player.title}")
+        await ctx.send(f"✅ Playing {player.title}!")
 
     @play.before_invoke
     async def before_play(self, ctx: commands.Context):
@@ -454,11 +413,11 @@ class Music(commands.Cog):
             # Case: Bot does not play a song
             self.music_state = MusicState.PAUSE
             ctx.voice_client.pause()
-            return await ctx.send(f"Paused: {ctx.voice_client.source.title}!")
+            return await ctx.send(f"✅ Paused {ctx.voice_client.source.title}!")
 
         if ctx.voice_client.is_paused():
             # Case: Bot is paused
-            return await ctx.send(f"Still paused: {ctx.voice_client.source.title}!")
+            return await ctx.send(f"⚠️ Already paused {ctx.voice_client.source.title}!")
 
     @pause.before_invoke
     async def before_pause(self, ctx: commands.Context):
@@ -538,15 +497,17 @@ class Music(commands.Cog):
                 The number of next songs to be removed
         """
         if self.playlist.empty():
-            return await ctx.send("Playlist is empty!")
+            return await ctx.send(
+                "❌ Please add a song to the playlist, before using this command!"
+            )
 
         if n <= 0 or n > len(self.playlist):
             return await ctx.send(
-                f"n should be in between of 1 and {len(self.playlist)}!"
+                f"❌ Please choose a number of songs to delete between 1 and {len(self.playlist)}!"
             )
 
         await self.bot.loop.run_in_executor(None, lambda: self.playlist.remove(n=n))
-        return await ctx.send(f"{n} songs are removed from the playlist!")
+        return await ctx.send(f"✅ Removed {n} songs from the playlist!")
 
     @remove.before_invoke
     async def before_remove(self, ctx: commands.Context):
@@ -584,7 +545,7 @@ class Music(commands.Cog):
             # Case: Bot plays/pause a song
             ctx.voice_client.stop()
 
-        await ctx.send("Playlist is reset!")
+        await ctx.send("✅ Reset playlist!")
 
     @reset.before_invoke
     async def before_reset(self, ctx: commands.Context):
@@ -667,15 +628,15 @@ class Music(commands.Cog):
                 The volume of the audio playback
         """
         if volume < 0 or volume > 100:
-            return await ctx.send("Volume needs to be in between of 0 and 100!")
+            return await ctx.send("❌ Please choose a volume between 0 and 100!")
 
         if self.curr_volume != volume:
             # Case: New volume is not the same as before
             self.curr_volume = volume
             ctx.voice_client.source.volume = self.curr_volume / 100
-            return await ctx.send(f"Changed volume to {volume}!")
+            return await ctx.send(f"✅ Changed volume to {self.curr_volume}!")
         # Case: New volume is the same as before
-        await ctx.send(f"Stayed with volume {self.curr_volume}!")
+        await ctx.send(f"⚠️ Already used volume {self.curr_volume}!")
 
     @volume.before_invoke
     async def before_volume(self, ctx: commands.Context):
