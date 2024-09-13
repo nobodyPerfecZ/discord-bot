@@ -3,7 +3,7 @@ name: Bug report
 about: Create a report to help us improve
 title: "[BUG] [Brief summary of the issue]"
 labels: bug
-assignees: nobodyPerfecZ
+assignees: ''
 
 ---
 
