@@ -27,5 +27,8 @@ Briefly describe the issue you encountered in one or two sentences.
 ## 6. Screenshots / Screen Recordings ##
 (If possible:) Include screenshots or screen recordings that clearly demonstrate the issue.
 
-## 7. Additional Information ##
+## 7. Priority ##
+Indicate the priority level of this request (e.g. High, Medium, Low).
+
+## 8. Additional Information ##
 (If possible:) Include here relevant information that might help diagnose the bug.
