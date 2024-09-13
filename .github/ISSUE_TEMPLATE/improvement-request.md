@@ -7,14 +7,14 @@ assignees: ''
 
 ---
 
-## 1. Description ##
+## Description ##
 Explain in detail what aspect of existing feature is not optimal and why.
 
-## 2. Proposed Solution ##
+## Proposed Solution ##
 Clearly outline your suggested improvement(s).
 
-## 3. Priority ##
-Indicate the priority level of this request (e.g. High, Medium, Low).
-
-## 4. Additional Information ##
+## Additional Information ##
 (If possible:) Here you can include additional information about the implementation.
+
+## Priority ##
+Indicate the priority level of this request (e.g. High, Medium, Low).

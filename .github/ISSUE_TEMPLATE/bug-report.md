@@ -7,28 +7,28 @@ assignees: ''
 
 ---
 
-## 1.  Description ##
+## Description ##
 Briefly describe the issue you encountered in one or two sentences.
 
-## 2. Steps to Reproduce ##
+## Steps to Reproduce ##
 (If possible:) Provide a clear, step-by-step guide on how to reproduce the bug.
 
-## 3. Expected behavior ##
+## Expected behavior ##
 (If possible:) Explain what should happen when following the steps to reproduce.
 
-## 4. Actual behavior ##
+## Actual behavior ##
 (If possible:) Describe what actually happens when you follow the steps to reproduce.
 
-## 5. Environment ##
+## Environment ##
 - OS: (e.g., Windows 10, macOS Monterey, Ubuntu 20.04)
 - Python Version: (e.g. python==3.10)
 - Package Versions: (e.g. discord.py==2.40)
 
-## 6. Screenshots / Screen Recordings ##
+## Screenshots / Screen Recordings ##
 (If possible:) Include screenshots or screen recordings that clearly demonstrate the issue.
 
-## 7. Priority ##
-Indicate the priority level of this request (e.g. High, Medium, Low).
-
-## 8. Additional Information ##
+## Additional Information ##
 (If possible:) Include here relevant information that might help diagnose the bug.
+
+## Priority ##
+Indicate the priority level of this request (e.g. High, Medium, Low).
