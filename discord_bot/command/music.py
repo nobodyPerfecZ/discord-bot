@@ -74,16 +74,14 @@ class Music(commands.Cog):
         self.curr_volume = volume
         self.disconnect.start()
 
-    @staticmethod
-    async def _check_author_voice(ctx: commands.Context):
+    async def _check_author_voice(self, ctx: commands.Context):
         """Raises an error if the author is not in a voice channel."""
         if ctx.author.voice is None:
             # Case: Author is not in a voice channel
             await ctx.send("❌ Please join a voice channel, before using this command!")
             raise commands.CommandError("Author is not connected to a voice channel!")
 
-    @staticmethod
-    async def _check_bot_voice(ctx: commands.Context):
+    async def _check_bot_voice(self, ctx: commands.Context):
         """Raises an error if the bot is not in a voice channel."""
         if ctx.voice_client is None:
             # Case: Bot is not in a voice channel
@@ -92,8 +90,7 @@ class Music(commands.Cog):
             )
             raise commands.CommandError("Bot is not connected to a voice channel!")
 
-    @staticmethod
-    async def _check_author_and_bot_voice(ctx: commands.Context):
+    async def _check_author_and_bot_voice(self, ctx: commands.Context):
         """Raises an error if the author and the bot are not in the same voice channel."""
         if ctx.author.voice.channel != ctx.voice_client.channel:
             # Case: Author is not in a voice channel
@@ -104,8 +101,7 @@ class Music(commands.Cog):
                 "Author and Bot are not in the same voice channel!"
             )
 
-    @staticmethod
-    async def _check_bot_streaming(ctx: commands.Context):
+    async def _check_bot_streaming(self, ctx: commands.Context):
         """Raises an error if the bot is not streaming (playing/pausing) and audio stream."""
         if not ctx.voice_client.is_playing() and not ctx.voice_client.is_paused():
             # Case: Bot does not play/pause any song
@@ -233,7 +229,9 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context (will be added automatically)
         """
-        await Music._check_author_voice(ctx)
+        await asyncio.gather(
+            self._check_author_voice(ctx),
+        )
 
     @commands.command(aliases=["Leave"])
     async def leave(self, ctx: commands.Context):
@@ -268,9 +266,11 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context (will be added automatically)
         """
-        await Music._check_author_voice(ctx)
-        await Music._check_bot_voice(ctx)
-        await Music._check_author_and_bot_voice(ctx)
+        await asyncio.gather(
+            self._check_author_voice(ctx),
+            self._check_bot_voice(ctx),
+            self._check_author_and_bot_voice(ctx),
+        )
 
     @commands.command(aliases=["Add"])
     async def add(self, ctx: commands.Context, url: str):
@@ -322,9 +322,11 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context (will be added automatically)
         """
-        await Music._check_author_voice(ctx)
-        await Music._check_bot_voice(ctx)
-        await Music._check_author_and_bot_voice(ctx)
+        await asyncio.gather(
+            self._check_author_voice(ctx),
+            self._check_bot_voice(ctx),
+            self._check_author_and_bot_voice(ctx),
+        )
 
     @commands.command(aliases=["Play"])
     async def play(self, ctx: commands.Context):
@@ -388,9 +390,11 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context (will be added automatically)
         """
-        await Music._check_author_voice(ctx)
-        await Music._check_bot_voice(ctx)
-        await Music._check_author_and_bot_voice(ctx)
+        await asyncio.gather(
+            self._check_author_voice(ctx),
+            self._check_bot_voice(ctx),
+            self._check_author_and_bot_voice(ctx),
+        )
 
     @commands.command(aliases=["Pause"])
     async def pause(self, ctx: commands.Context):
@@ -433,10 +437,12 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context (will be added automatically)
         """
-        await Music._check_author_voice(ctx)
-        await Music._check_bot_voice(ctx)
-        await Music._check_author_and_bot_voice(ctx)
-        await Music._check_bot_streaming(ctx)
+        await asyncio.gather(
+            self._check_author_voice(ctx),
+            self._check_bot_voice(ctx),
+            self._check_author_and_bot_voice(ctx),
+            self._check_bot_streaming(ctx),
+        )
 
     @commands.command(aliases=["Skip"])
     async def skip(self, ctx: commands.Context):
@@ -472,10 +478,12 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context (will be added automatically)
         """
-        await Music._check_author_voice(ctx)
-        await Music._check_bot_voice(ctx)
-        await Music._check_author_and_bot_voice(ctx)
-        await Music._check_bot_streaming(ctx)
+        await asyncio.gather(
+            self._check_author_voice(ctx),
+            self._check_bot_voice(ctx),
+            self._check_author_and_bot_voice(ctx),
+            self._check_bot_streaming(ctx),
+        )
 
     @commands.command(aliases=["Remove"])
     async def remove(self, ctx: commands.Context, n: int):
@@ -522,9 +530,11 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context (will be added automatically)
         """
-        await Music._check_author_voice(ctx)
-        await Music._check_bot_voice(ctx)
-        await Music._check_author_and_bot_voice(ctx)
+        await asyncio.gather(
+            self._check_author_voice(ctx),
+            self._check_bot_voice(ctx),
+            self._check_author_and_bot_voice(ctx),
+        )
 
     @commands.command(aliases=["Reset"])
     async def reset(self, ctx: commands.Context):
@@ -560,9 +570,11 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context (will be added automatically)
         """
-        await Music._check_author_voice(ctx)
-        await Music._check_bot_voice(ctx)
-        await Music._check_author_and_bot_voice(ctx)
+        await asyncio.gather(
+            self._check_author_voice(ctx),
+            self._check_bot_voice(ctx),
+            self._check_author_and_bot_voice(ctx),
+        )
 
     @commands.command(aliases=["Show"])
     async def show(self, ctx: commands.Context):
@@ -606,9 +618,11 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context (will be added automatically)
         """
-        await Music._check_author_voice(ctx)
-        await Music._check_bot_voice(ctx)
-        await Music._check_author_and_bot_voice(ctx)
+        await asyncio.gather(
+            self._check_author_voice(ctx),
+            self._check_bot_voice(ctx),
+            self._check_author_and_bot_voice(ctx),
+        )
 
     @commands.command(aliases=["Volume"])
     async def volume(self, ctx: commands.Context, volume: int):
@@ -652,7 +666,9 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context (will be added automatically)
         """
-        await Music._check_author_voice(ctx)
-        await Music._check_bot_voice(ctx)
-        await Music._check_author_and_bot_voice(ctx)
-        await Music._check_bot_streaming(ctx)
+        await asyncio.gather(
+            self._check_author_voice(ctx),
+            self._check_bot_voice(ctx),
+            self._check_author_and_bot_voice(ctx),
+            self._check_bot_streaming(ctx),
+        )
