@@ -34,5 +34,21 @@ if __name__ == "__main__":
         help_command=help_command,
     )
 
+    # Create the configuration
+    config = {
+        "whitelisted_roles": [
+            "DJ",
+            "#ANBU#",
+            "Kage",
+            "Jonin",
+            "Chunin",
+            "Genin",
+            "#Hafensänger#",
+        ],
+        "whitelisted_text_channels": ["music🎼", "bottest"],
+        "disconnect_timeout": 600,
+        "volume": 50,
+    }
+
     # Run the bot on the server
-    asyncio.run(main(bot, disconnect_timeout=600, volume=50))
+    asyncio.run(main(bot, **config))
