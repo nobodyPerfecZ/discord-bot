@@ -188,7 +188,7 @@ class Music(commands.Cog):
             self.music_state = MusicState.DISCONNECT
 
             # Clear the playlist
-            self.playlist.clear()
+            await self.playlist.clear()
 
             # Set the volume to standard
             self.curr_volume = self.start_volume
@@ -269,7 +269,7 @@ class Music(commands.Cog):
         self.music_state = MusicState.DISCONNECT
 
         # Clear the playlist
-        self.playlist.clear()
+        await self.playlist.clear()
 
         # Set the volume to standard
         self.curr_volume = self.start_volume
@@ -314,7 +314,7 @@ class Music(commands.Cog):
         audio_source = AudioSource(yt_url=url, priority=priority)
 
         # Add the audio file to the playlist
-        self.playlist.add(audio_source)
+        await self.playlist.add(audio_source)
 
         await ctx.send(f"✅ Added ``{audio_source.yt_url}`` to the playlist!")
 
@@ -327,7 +327,7 @@ class Music(commands.Cog):
             # Case: Bot never played/paused a song before
             return
 
-        if self.playlist.empty():
+        if await self.playlist.empty():
             self.music_state = MusicState.CONNECT
             return await ctx.send("⚠️ The playlist no longer contains any songs!")
 
@@ -335,7 +335,7 @@ class Music(commands.Cog):
         voice_client = ctx.voice_client
 
         # Play the next song
-        audio_source = self.playlist.pop()
+        audio_source = await self.playlist.pop()
         try:
             player = await YTDLVolumeTransformer.from_audio_source(
                 audio_source=audio_source,
@@ -389,14 +389,14 @@ class Music(commands.Cog):
             ctx.voice_client.resume()
             return await ctx.send(f"✅ Resuming ``{ctx.voice_client.source.title}``!")
 
-        if self.playlist.empty():
+        if await self.playlist.empty():
             # Case: There is no music in the playlist
             return await ctx.send(
                 "❌ Please add a song to the playlist, before using this command!"
             )
 
         # Start playing the next song from the playlist
-        audio_source = self.playlist.pop()
+        audio_source = await self.playlist.pop()
         try:
             player = await YTDLVolumeTransformer.from_audio_source(
                 audio_source=audio_source,
@@ -502,7 +502,7 @@ class Music(commands.Cog):
         self.music_state = MusicState.CONNECT
 
         # Clear the playlist
-        self.playlist.clear()
+        await self.playlist.clear()
 
         # Set the volume to standard
         self.curr_volume = self.start_volume
@@ -546,9 +546,9 @@ class Music(commands.Cog):
                 value=ctx.voice_client.source.yt_url,
             )
 
-        for i, audio_source in enumerate(self.playlist, 1):
+        async for i, audio_source in self.playlist.iterate():
             embed.add_field(
-                name=f"{i}. Song",
+                name=f"{i+1}. Song",
                 value=audio_source.yt_url,
                 inline=False,
             )

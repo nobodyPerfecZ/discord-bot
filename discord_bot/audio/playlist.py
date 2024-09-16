@@ -1,3 +1,4 @@
+import asyncio
 import heapq
 from dataclasses import dataclass, field
 
@@ -26,45 +27,42 @@ class Playlist:
     def __init__(self, max_size: int | None = None):
         self._playlist = []
         self._max_size = max_size
+        self._lock = asyncio.Lock()
 
-    def empty(self) -> bool:
+    async def empty(self) -> bool:
         """Checks whether the playlist has no audio sources stored."""
-        return len(self) == 0
+        async with self._lock:
+            return len(self._playlist) == 0
 
-    def full(self) -> bool:
+    async def full(self) -> bool:
         """Checks whether the playlist has reached the maximum amount of stored audio sources."""
-        if self._max_size is None:
-            return False
-        else:
-            return len(self) == self._max_size
+        async with self._lock:
+            if self._max_size is None:
+                return False
+            else:
+                return len(self._playlist) == self._max_size
 
-    def clear(self):
+    async def clear(self):
         """Removes all stored audio sources from the playlist."""
-        self._playlist = []
+        async with self._lock:
+            self._playlist = []
 
-    def add(self, audio_source: AudioSource):
+    async def add(self, audio_source: AudioSource):
         """Adds an audio source to the playlist."""
-        if self._max_size is not None and len(self) >= self._max_size:
-            raise ValueError(
-                "The playlist has reached the maximum limit of audio sources!"
-            )
-        heapq.heappush(self._playlist, audio_source)
+        async with self._lock:
+            if self._max_size is not None and len(self._playlist) >= self._max_size:
+                raise ValueError(
+                    "The playlist has reached the maximum limit of audio sources!"
+                )
+            heapq.heappush(self._playlist, audio_source)
 
-    def pop(self) -> AudioSource:
+    async def pop(self) -> AudioSource:
         """Removes and returns the next audio source from the playlist."""
-        return heapq.heappop(self._playlist)
+        async with self._lock:
+            return heapq.heappop(self._playlist)
 
-    def __len__(self):
-        return self._playlist.__len__()
-
-    def __iter__(self):
-        return self._playlist.__iter__()
-
-    def __getitem__(self, item):
-        return self._playlist.__getitem__(item)
-
-    def __str__(self):
-        return self._playlist.__str__()
-
-    def __repr__(self):
-        return self._playlist.__repr__()
+    async def iterate(self):
+        """Asynchronously iterates over all items in the playlist."""
+        async with self._lock:
+            for i, item in enumerate(self._playlist, 0):
+                yield i, item
