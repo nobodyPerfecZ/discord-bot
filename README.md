@@ -7,18 +7,17 @@ This project aims to build a versatile music bot for the Discord server ``Wixoss
 ## Features 🎶
 Our bot currently supports the following commands:
 
-| Commands |                                                                                     |
-|:---------|-------------------------------------------------------------------------------------|
-| !add     | Adds a song (YouTube URL) to the playlist.                                          |
-| !join    | Joins the current voice channel of the command author.                              |
-| !leave   | Leaves the voice channel.                                                           |
-| !pause   | Pauses the currently playing song.                                                  |
-| !play    | Starts playing the next song in the playlist.                                       |
-| !remove  | Removes the first n songs from the playlist (excluding the currently playing song). |
-| !reset   | Stops the current song and clears the entire playlist.                              |
-| !show    | Displays the songs in the playlist (including the currently playing song).          |
-| !skip    | Skips the current song.                                                             |
-| !volume  | Adjusts the volume of the audio playback.                                           |
+| Commands |                                                                  |
+|:---------|------------------------------------------------------------------|
+| !join    | Joins the voice channel of the author.                           |
+| !leave   | Leaves the voice channel.                                        |
+| !add     | Adds an audio source (YouTube URL) to the playlist.              |
+| !play    | Starts playing the audio source from the playlist.               |
+| !pause   | Pauses the currently played audio source.                        |
+| !skip    | Skips the currently played audio source in the playlist.         |
+| !reset   | Stops the currently played audio source and clears the playlist. |
+| !show    | Shows the audio sources from the playlist.                       |
+| !volume  | Changes the volume of the music player.                          |
 
 ## Run the Bot on a Linux Server with ``screen`` 💻
 This guide explains how to run the discord bot even after closing your SSH connection using the ``screen`` package from Linux.

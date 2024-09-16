@@ -66,6 +66,7 @@ class Music(commands.Cog):
         whitelisted_text_channels: list[str],
         volume: int = 50,
         disconnect_timeout: int = 600,
+        **kwargs,
     ):
         if not roles_valid(whitelisted_roles):
             raise ValueError(
@@ -210,7 +211,7 @@ class Music(commands.Cog):
     @commands.command(aliases=["Join"])
     async def join(self, ctx: commands.Context):
         """
-        Joins to the current voice channel of the author.
+        Joins the voice channel of the author.
 
         Args:
             ctx (commands.Context):
@@ -369,7 +370,7 @@ class Music(commands.Cog):
     @commands.command(aliases=["Play"])
     async def play(self, ctx: commands.Context):
         """
-        Start playing the next audio song from the playlist.
+        Starts playing the audio source from the playlist.
 
         Args:
             ctx (commands.Context):
@@ -432,7 +433,7 @@ class Music(commands.Cog):
     @commands.command(aliases=["Pause"])
     async def pause(self, ctx: commands.Context):
         """
-        Pauses the current played audio source.
+        Pauses the currently played audio source.
 
         Args:
             ctx (commands.Context):
@@ -466,7 +467,7 @@ class Music(commands.Cog):
     @commands.command(aliases=["Skip"])
     async def skip(self, ctx: commands.Context):
         """
-        Skips the currently playing audio source in the playlist.
+        Skips the currently played audio source in the playlist.
 
         Args:
             ctx (commands.Context):
@@ -490,7 +491,7 @@ class Music(commands.Cog):
     @commands.command(aliases=["Reset"])
     async def reset(self, ctx: commands.Context):
         """
-        Stops the currently playing audio source and clears the playlist.
+        Stops the currently played audio source and clears the playlist.
 
         Args:
             ctx (commands.Context):
@@ -529,7 +530,7 @@ class Music(commands.Cog):
     @commands.command(aliases=["Show"])
     async def show(self, ctx: commands.Context):
         """
-        Displays the audio sources from the playlist.
+        Shows the audio sources from the playlist.
 
         Args:
             ctx (commands.Context):
@@ -570,14 +571,14 @@ class Music(commands.Cog):
     @commands.command(aliases=["Volume"])
     async def volume(self, ctx: commands.Context, *, volume: int):
         """
-        Changes the volume of the audio playback.
+        Changes the volume of the music player.
 
         Args:
             ctx (commands.Context):
                 The discord context
 
             volume (int):
-                The volume of the audio playback
+                The new volume
         """
         await self._before_volume(ctx=ctx, volume=volume)
 
@@ -588,3 +589,48 @@ class Music(commands.Cog):
             return await ctx.send(f"✅ Changed volume to ``{self.curr_volume}``!")
         # Case: New volume is the same as before
         await ctx.send(f"⚠️ Already using volume ``{self.curr_volume}``!")
+
+    @staticmethod
+    def help_information() -> discord.Embed:
+        """Returns the help information of the music commands."""
+        embed = discord.Embed(title="Music:", color=discord.Color.blue())
+        embed.add_field(
+            name="!join", value="Joins the voice channel of the author.", inline=False
+        )
+        embed.add_field(name="!leave", value="Leaves the voice channel.", inline=False)
+        embed.add_field(
+            name="!add <url>",
+            value="Adds an audio source (YouTube URL) to the playlist.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!play",
+            value="Starts playing the audio source from the playlist.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!pause",
+            value="Pauses the currently played audio source.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!skip",
+            value="Skips the currently played audio source in the playlist.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!reset",
+            value="Stops the currently played audio source and clears the playlist.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!show",
+            value="Shows the audio sources from the playlist.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!volume <volume>",
+            value="Changes the volume of the music player.",
+            inline=False,
+        )
+        return embed

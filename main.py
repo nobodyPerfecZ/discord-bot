@@ -5,16 +5,14 @@ import os
 import discord
 from discord.ext import commands
 
-from discord_bot.command import Music
+from discord_bot.command import Help, Music
 
 
 async def main(client: commands.Bot, **kwargs):
     """Starting point of the bot."""
     async with client:
         await client.add_cog(Music(client, **kwargs))
-        await client.start(
-            token=os.environ["__DISCORD_API_KEY__"],
-        )
+        await client.start(token=os.environ["__DISCORD_API_KEY__"])
 
 
 if __name__ == "__main__":
@@ -24,8 +22,8 @@ if __name__ == "__main__":
     # Get all intents
     intents = discord.Intents.all()
 
-    # Change the default behavior of !help by disabling parameter descriptions
-    help_command = commands.DefaultHelpCommand(show_parameter_descriptions=False)
+    # Create the help command
+    help_command = Help()
 
     # Create the bot
     bot = commands.Bot(
