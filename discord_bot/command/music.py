@@ -152,6 +152,20 @@ class Music(commands.Cog):
                 "Command is not executed in the required text channel!"
             )
 
+    async def _check_valid_url(self, ctx: commands.Context, url: str):
+        """Raises an error if the URL is not a valid YouTube URL."""
+        if not url.startswith("https://www.youtube.com"):
+            # Case: URL is not a valid YouTube URL
+            await ctx.send(f"❌ Please try a different URL than ``{url}``!")
+            raise commands.CommandError("URL is not a valid YouTube URL!")
+
+    async def _check_valid_volume(self, ctx: commands.Context, volume: int):
+        """Raises an error if the volume is not in between of 0 and 100."""
+        if volume < 0 or volume > 100:
+            # Case: Volume is not in between of 0 and 100
+            await ctx.send("❌ Please choose a volume between 0 and 100!")
+            raise commands.CommandError("Volume is not in between of 0 and 100!")
+
     @tasks.loop(seconds=60)
     async def disconnect(self):
         """Background Task to handle the disconnect timeout."""
@@ -185,6 +199,14 @@ class Music(commands.Cog):
             # Disconnect the bot from the voice channel
             await self.bot.voice_clients[0].disconnect(force=False)
 
+    async def before_join(self, ctx: commands.Context):
+        """Checks for the leave command before performing it."""
+        await asyncio.gather(
+            self._check_author_role_whitelisted(ctx),
+            self._check_text_channel_whitelisted(ctx),
+            self._check_author_in_voice_channel(ctx),
+        )
+
     @commands.command(aliases=["Join"])
     async def join(self, ctx: commands.Context):
         """
@@ -194,6 +216,8 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
+        await self.before_join(ctx=ctx)
+
         author_channel = ctx.author.voice.channel
         if ctx.voice_client is None:
             # Case: Bot is not in a voice channel
@@ -218,13 +242,14 @@ class Music(commands.Cog):
                 f"✅ Moved from ``{bot_channel}`` to ``{author_channel}``!"
             )
 
-    @join.before_invoke
-    async def before_join(self, ctx: commands.Context):
+    async def before_leave(self, ctx: commands.Context):
         """Checks for the leave command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
+            self._check_bot_in_voice_channel(ctx),
+            self._check_author_bot_in_same_voice(ctx),
         )
 
     @commands.command(aliases=["Leave"])
@@ -236,6 +261,8 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
+        await self.before_leave(ctx=ctx)
+
         channel = ctx.voice_client.channel
 
         # Set the music state to disconnect
@@ -255,15 +282,15 @@ class Music(commands.Cog):
 
         return await ctx.send(f"✅ Left ``{channel}``!")
 
-    @leave.before_invoke
-    async def before_leave(self, ctx: commands.Context):
-        """Checks for the leave command before performing it."""
+    async def before_add(self, ctx: commands.Context, *, url: str):
+        """Checks for the add command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
             self._check_author_bot_in_same_voice(ctx),
+            self._check_valid_url(ctx, url),
         )
 
     @commands.command(aliases=["Add"])
@@ -278,9 +305,7 @@ class Music(commands.Cog):
             url (str):
                 The URL of the YouTube video
         """
-        if not url.startswith("https://www.youtube.com"):
-            # Case: URL is not a valid YouTube URL
-            return await ctx.send(f"❌ Please try a different URL than ``{url}``!")
+        await self.before_add(ctx=ctx, url=url)
 
         # Get the highest priority (lowest value) of the author's roles
         priority = highest_priority(ctx.author.roles)
@@ -292,17 +317,6 @@ class Music(commands.Cog):
         self.playlist.add(audio_source)
 
         await ctx.send(f"✅ Added ``{audio_source.yt_url}`` to the playlist!")
-
-    @add.before_invoke
-    async def before_add(self, ctx: commands.Context):
-        """Checks for the add command before performing it."""
-        await asyncio.gather(
-            self._check_author_role_whitelisted(ctx),
-            self._check_text_channel_whitelisted(ctx),
-            self._check_author_in_voice_channel(ctx),
-            self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice(ctx),
-        )
 
     async def _play_next(self, ctx: commands.Context):
         """Plays the next song in the playlist."""
@@ -342,6 +356,16 @@ class Music(commands.Cog):
             )
             return await self._play_next(ctx)
 
+    async def before_play(self, ctx: commands.Context):
+        """Checks for the play command before performing it."""
+        await asyncio.gather(
+            self._check_author_role_whitelisted(ctx),
+            self._check_text_channel_whitelisted(ctx),
+            self._check_author_in_voice_channel(ctx),
+            self._check_bot_in_voice_channel(ctx),
+            self._check_author_bot_in_same_voice(ctx),
+        )
+
     @commands.command(aliases=["Play"])
     async def play(self, ctx: commands.Context):
         """
@@ -351,6 +375,8 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
+        await self.before_play(ctx=ctx)
+
         if ctx.voice_client.is_playing():
             # Case: Bot already plays music
             return await ctx.send(
@@ -392,15 +418,15 @@ class Music(commands.Cog):
             )
             return await self.play(ctx)
 
-    @play.before_invoke
-    async def before_play(self, ctx: commands.Context):
-        """Checks for the play command before performing it."""
+    async def before_pause(self, ctx: commands.Context):
+        """Checks for the pause command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
             self._check_author_bot_in_same_voice(ctx),
+            self._check_bot_is_streaming(ctx),
         )
 
     @commands.command(aliases=["Pause"])
@@ -412,6 +438,8 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
+        await self.before_pause(ctx=ctx)
+
         if ctx.voice_client.is_playing():
             # Case: Bot plays an audio source
             self.music_state = MusicState.PAUSE
@@ -424,9 +452,8 @@ class Music(commands.Cog):
                 f"⚠️ Already paused ``{ctx.voice_client.source.title}``!"
             )
 
-    @pause.before_invoke
-    async def before_pause(self, ctx: commands.Context):
-        """Checks for the pause command before performing it."""
+    async def before_skip(self, ctx: commands.Context):
+        """Checks for the skip command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
@@ -445,19 +472,19 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
+        await self.before_skip(ctx=ctx)
+
         # Calls the after function (_play_next) of the couroutine
         ctx.voice_client.stop()
 
-    @skip.before_invoke
-    async def before_skip(self, ctx: commands.Context):
-        """Checks for the skip command before performing it."""
+    async def before_reset(self, ctx: commands.Context):
+        """Checks for the reset command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
             self._check_author_bot_in_same_voice(ctx),
-            self._check_bot_is_streaming(ctx),
         )
 
     @commands.command(aliases=["Reset"])
@@ -469,6 +496,7 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
+        await self.before_reset(ctx=ctx)
 
         # Set the music state to connect
         self.music_state = MusicState.CONNECT
@@ -488,9 +516,8 @@ class Music(commands.Cog):
 
         await ctx.send("✅ Reset playlist!")
 
-    @reset.before_invoke
-    async def before_reset(self, ctx: commands.Context):
-        """Checks for the reset command before performing it."""
+    async def before_show(self, ctx: commands.Context):
+        """Checks for the show command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
@@ -508,6 +535,7 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
+        await self.before_show(ctx=ctx)
 
         embed = discord.Embed(title="🎶 Playlist 🎶", color=discord.Color.blue())
 
@@ -527,15 +555,16 @@ class Music(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @show.before_invoke
-    async def before_show(self, ctx: commands.Context):
-        """Checks for the show command before performing it."""
+    async def before_volume(self, ctx: commands.Context, *, volume: int):
+        """Checks for the volume command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
             self._check_author_bot_in_same_voice(ctx),
+            self._check_bot_is_streaming(ctx),
+            self._check_valid_volume(ctx, volume),
         )
 
     @commands.command(aliases=["Volume"])
@@ -550,8 +579,7 @@ class Music(commands.Cog):
             volume (int):
                 The volume of the audio playback
         """
-        if volume < 0 or volume > 100:
-            return await ctx.send("❌ Please choose a volume between 0 and 100!")
+        await self.before_volume(ctx=ctx, volume=volume)
 
         if self.curr_volume != volume:
             # Case: New volume is not the same as before
@@ -560,15 +588,3 @@ class Music(commands.Cog):
             return await ctx.send(f"✅ Changed volume to ``{self.curr_volume}``!")
         # Case: New volume is the same as before
         await ctx.send(f"⚠️ Already using volume ``{self.curr_volume}``!")
-
-    @volume.before_invoke
-    async def before_volume(self, ctx: commands.Context):
-        """Checks for the volume command before performing it."""
-        await asyncio.gather(
-            self._check_author_role_whitelisted(ctx),
-            self._check_text_channel_whitelisted(ctx),
-            self._check_author_in_voice_channel(ctx),
-            self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice(ctx),
-            self._check_bot_is_streaming(ctx),
-        )
