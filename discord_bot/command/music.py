@@ -199,7 +199,7 @@ class Music(commands.Cog):
             # Disconnect the bot from the voice channel
             await self.bot.voice_clients[0].disconnect(force=False)
 
-    async def before_join(self, ctx: commands.Context):
+    async def _before_join(self, ctx: commands.Context):
         """Checks for the leave command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
@@ -216,7 +216,7 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
-        await self.before_join(ctx=ctx)
+        await self._before_join(ctx=ctx)
 
         author_channel = ctx.author.voice.channel
         if ctx.voice_client is None:
@@ -242,7 +242,7 @@ class Music(commands.Cog):
                 f"✅ Moved from ``{bot_channel}`` to ``{author_channel}``!"
             )
 
-    async def before_leave(self, ctx: commands.Context):
+    async def _before_leave(self, ctx: commands.Context):
         """Checks for the leave command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
@@ -261,7 +261,7 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
-        await self.before_leave(ctx=ctx)
+        await self._before_leave(ctx=ctx)
 
         channel = ctx.voice_client.channel
 
@@ -282,7 +282,7 @@ class Music(commands.Cog):
 
         return await ctx.send(f"✅ Left ``{channel}``!")
 
-    async def before_add(self, ctx: commands.Context, *, url: str):
+    async def _before_add(self, ctx: commands.Context, *, url: str):
         """Checks for the add command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
@@ -305,7 +305,7 @@ class Music(commands.Cog):
             url (str):
                 The URL of the YouTube video
         """
-        await self.before_add(ctx=ctx, url=url)
+        await self._before_add(ctx=ctx, url=url)
 
         # Get the highest priority (lowest value) of the author's roles
         priority = highest_priority(ctx.author.roles)
@@ -356,7 +356,7 @@ class Music(commands.Cog):
             )
             return await self._play_next(ctx)
 
-    async def before_play(self, ctx: commands.Context):
+    async def _before_play(self, ctx: commands.Context):
         """Checks for the play command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
@@ -375,7 +375,7 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
-        await self.before_play(ctx=ctx)
+        await self._before_play(ctx=ctx)
 
         if ctx.voice_client.is_playing():
             # Case: Bot already plays music
@@ -418,7 +418,7 @@ class Music(commands.Cog):
             )
             return await self.play(ctx)
 
-    async def before_pause(self, ctx: commands.Context):
+    async def _before_pause(self, ctx: commands.Context):
         """Checks for the pause command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
@@ -438,7 +438,7 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
-        await self.before_pause(ctx=ctx)
+        await self._before_pause(ctx=ctx)
 
         if ctx.voice_client.is_playing():
             # Case: Bot plays an audio source
@@ -452,7 +452,7 @@ class Music(commands.Cog):
                 f"⚠️ Already paused ``{ctx.voice_client.source.title}``!"
             )
 
-    async def before_skip(self, ctx: commands.Context):
+    async def _before_skip(self, ctx: commands.Context):
         """Checks for the skip command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
@@ -472,12 +472,12 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
-        await self.before_skip(ctx=ctx)
+        await self._before_skip(ctx=ctx)
 
         # Calls the after function (_play_next) of the couroutine
         ctx.voice_client.stop()
 
-    async def before_reset(self, ctx: commands.Context):
+    async def _before_reset(self, ctx: commands.Context):
         """Checks for the reset command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
@@ -496,7 +496,7 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
-        await self.before_reset(ctx=ctx)
+        await self._before_reset(ctx=ctx)
 
         # Set the music state to connect
         self.music_state = MusicState.CONNECT
@@ -516,7 +516,7 @@ class Music(commands.Cog):
 
         await ctx.send("✅ Reset playlist!")
 
-    async def before_show(self, ctx: commands.Context):
+    async def _before_show(self, ctx: commands.Context):
         """Checks for the show command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
@@ -535,7 +535,7 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
-        await self.before_show(ctx=ctx)
+        await self._before_show(ctx=ctx)
 
         embed = discord.Embed(title="🎶 Playlist 🎶", color=discord.Color.blue())
 
@@ -555,7 +555,7 @@ class Music(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    async def before_volume(self, ctx: commands.Context, *, volume: int):
+    async def _before_volume(self, ctx: commands.Context, *, volume: int):
         """Checks for the volume command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
@@ -579,7 +579,7 @@ class Music(commands.Cog):
             volume (int):
                 The volume of the audio playback
         """
-        await self.before_volume(ctx=ctx, volume=volume)
+        await self._before_volume(ctx=ctx, volume=volume)
 
         if self.curr_volume != volume:
             # Case: New volume is not the same as before
