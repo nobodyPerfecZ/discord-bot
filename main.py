@@ -4,8 +4,12 @@ import os
 
 import discord
 from discord.ext import commands
+from dotenv import load_dotenv
 
 from discord_bot.command import Help, Music
+
+# Load the environment variables
+load_dotenv()
 
 
 async def main(client: commands.Bot, **kwargs):
