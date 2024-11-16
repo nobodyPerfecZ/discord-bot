@@ -25,6 +25,7 @@ role_id_to_priority = {
     248897274002931722: 6,
 }
 
+
 def roles_valid(roles: list[str]) -> bool:
     """Returns True if all roles are valid."""
     return all(role in list(role_id_to_name.values()) for role in roles)

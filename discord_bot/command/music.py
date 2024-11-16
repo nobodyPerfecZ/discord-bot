@@ -1,3 +1,5 @@
+"""Music commands for the bot."""
+
 import asyncio
 import logging
 from enum import IntEnum
