@@ -5,13 +5,11 @@ import logging.handlers
 import os
 
 import discord
+import yaml
 from discord.ext import commands
 from dotenv import load_dotenv
 
 from discord_bot.command import Help, Music
-from discord_bot.util.role import __WHITELISTED_ROLES__
-from discord_bot.util.text_channel import __WHITELISTED_TEXT_CHANNELS__
-from discord_bot.util.voice_channel import __WHITELISTED_VOICE_CHANNELS__
 
 # Load the environment variables
 load_dotenv()
@@ -20,7 +18,7 @@ load_dotenv()
 async def main(client: commands.Bot, **kwargs):
     """Starting point of the bot."""
     async with client:
-        await client.add_cog(Music(client, **kwargs))
+        await client.add_cog(Music(client, **kwargs["music"]))
         await client.start(token=os.environ["__DISCORD_API_KEY__"])
 
 
@@ -42,13 +40,8 @@ if __name__ == "__main__":
     )
 
     # Create the configuration
-    config = {
-        "whitelisted_roles": __WHITELISTED_ROLES__,
-        "whitelisted_text_channels": __WHITELISTED_TEXT_CHANNELS__,
-        "whitelisted_voice_channels": __WHITELISTED_VOICE_CHANNELS__,
-        "disconnect_timeout": 600,
-        "volume": 50,
-    }
+    with open("config.yaml", "r", encoding="utf-8") as file:
+        config = yaml.load(file, Loader=yaml.FullLoader)
 
     # Run the bot on the server
     asyncio.run(main(bot, **config))
