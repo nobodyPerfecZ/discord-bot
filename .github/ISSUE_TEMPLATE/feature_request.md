@@ -1,20 +1,15 @@
 ---
 name: Feature request
-about: Suggest an idea for this project
+about: Propose a new feature or an improvement for the project.
 title: "[FEATURE] <Brief summary of the issue>"
 labels: enhancement
-assignees: ''
-
+assignees: ""
 ---
 
-## Description ##
-Explain in detail what the requested feature is and how it would work.
+## Summary
 
-## Use Cases ##
-Provide specific examples of how users would utilize this feature.
+Provide a brief summary of the feature request in one or two sentences.
 
-## Additional Information ##
-(If possible:) Here you can include additional information about the implementation or the feature itself.
+## Benefits
 
-## Priority ##
-Indicate the priority level of this request (e.g. High, Medium, Low).
+Why would this feature be useful?
