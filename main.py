@@ -1,3 +1,5 @@
+"""Starting point of the bot."""
+
 import asyncio
 import logging.handlers
 import os
@@ -7,6 +9,9 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from discord_bot.command import Help, Music
+from discord_bot.util.role import __WHITELISTED_ROLES__
+from discord_bot.util.text_channel import __WHITELISTED_TEXT_CHANNELS__
+from discord_bot.util.voice_channel import __WHITELISTED_VOICE_CHANNELS__
 
 # Load the environment variables
 load_dotenv()
@@ -38,16 +43,9 @@ if __name__ == "__main__":
 
     # Create the configuration
     config = {
-        "whitelisted_roles": [
-            "DJ",
-            "#ANBU#",
-            "Kage",
-            "Jonin",
-            "Chunin",
-            "Genin",
-            "#Hafensänger#",
-        ],
-        "whitelisted_text_channels": ["music🎼", "bottest"],
+        "whitelisted_roles": __WHITELISTED_ROLES__,
+        "whitelisted_text_channels": __WHITELISTED_TEXT_CHANNELS__,
+        "whitelisted_voice_channels": __WHITELISTED_VOICE_CHANNELS__,
         "disconnect_timeout": 600,
         "volume": 50,
     }

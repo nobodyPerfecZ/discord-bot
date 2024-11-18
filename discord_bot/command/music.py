@@ -10,8 +10,15 @@ from discord.ext import commands, tasks
 
 from discord_bot.audio import AudioSource, Playlist
 from discord_bot.transformer import YTDLVolumeTransformer
-from discord_bot.util.channel import channel_whitelisted, channels_valid
-from discord_bot.util.role import highest_priority, roles_valid, roles_whitelisted
+from discord_bot.util.role import lowest_priority, valid_role_id, whitelisted_role_id
+from discord_bot.util.text_channel import (
+    valid_text_channel_id,
+    whitelisted_text_channel_id,
+)
+from discord_bot.util.voice_channel import (
+    valid_voice_channel_id,
+    whitelisted_voice_channel_id,
+)
 
 logger = logging.getLogger("discord")
 
@@ -48,47 +55,53 @@ class Music(commands.Cog):
         bot (commands.Bot):
             The discord client to handle the commands
 
-        whitelisted_roles (list[str]):
-            The list of role names that are allowed to use the music bot
+        whitelisted_roles (list[int]):
+            The list of role ids that are allowed to use the music bot
 
-        whitelisted_text_channels (list[str]):
-            The list of text channel names where the music bot can be used
+        whitelisted_text_channels (list[int]):
+            The list of text channel ids where the music bot can be used
 
-        disconnect_timeout (int):
-            The time in seconds, where the bot leaves the server and resets its playlist
+        whitelisted_voice_channels (list[int]):
+            The list of voice channel ids where the music bot can be used
 
         volume (int):
             The starting volume with a value in between of 0 and 100
+
+        disconnect_timeout (int):
+            The time in seconds, where the bot leaves the server and resets its playlist
     """
 
     def __init__(
         self,
         bot: commands.Bot,
-        whitelisted_roles: list[str],
-        whitelisted_text_channels: list[str],
+        whitelisted_roles: list[int],
+        whitelisted_text_channels: list[int],
+        whitelisted_voice_channels: list[int],
         volume: int = 50,
         disconnect_timeout: int = 600,
-        **kwargs,
     ):
-        if not roles_valid(whitelisted_roles):
+        if not valid_role_id(whitelisted_roles):
+            raise ValueError("whitelisted_roles needs to be in __ROLES__!")
+        if not valid_text_channel_id(whitelisted_text_channels):
             raise ValueError(
-                "Whitelisted roles need to be in the role_id_to_name_priority_wrapper!"
+                "whitelisted_text_channels need to be in __TEXT_CHANNELS__!"
             )
-        if not channels_valid(whitelisted_text_channels):
+        if not valid_voice_channel_id(whitelisted_voice_channels):
             raise ValueError(
-                "Whitelisted text channels need to be in the channel_id_to_name_priority!"
+                "whitelisted_voice_channels need to be in __VOICE_CHANNELS__!"
             )
         if volume < 0 or volume > 100:
-            raise ValueError("Volume needs to be in between of 0 and 100!")
+            raise ValueError("volume needs to be in between of 0 and 100!")
         if disconnect_timeout < 0:
             raise ValueError(
-                "Disconnect timeout needs to be higher than or equal to 0!"
+                "disconnect_timeout needs to be higher than or equal to 0!"
             )
 
         self.bot = bot
 
         self.whitelisted_roles = whitelisted_roles
         self.whitelisted_text_channels = whitelisted_text_channels
+        self.whitelisted_voice_channels = whitelisted_voice_channels
 
         # Initial/Current volume of the music player
         self.start_volume = volume
@@ -114,7 +127,7 @@ class Music(commands.Cog):
 
     async def _check_author_role_whitelisted(self, ctx: commands.Context):
         """Raises an error if the author does not have the required role."""
-        if not roles_whitelisted(ctx.author.roles, self.whitelisted_roles):
+        if not whitelisted_role_id(ctx.author.roles, self.whitelisted_roles):
             # Case: Author does not have the required role
             await ctx.send("❌ You do not have the required role to use this command!")
             raise commands.CommandError("Author does not have the required role!")
@@ -148,11 +161,22 @@ class Music(commands.Cog):
 
     async def _check_text_channel_whitelisted(self, ctx: commands.Context):
         """Raises an error if the command is not executed in the required text channel."""
-        if not channel_whitelisted(ctx.channel, self.whitelisted_text_channels):
+        if not whitelisted_text_channel_id(ctx.channel, self.whitelisted_text_channels):
             # Case: Command is not executed in the required text channel
             await ctx.send("❌ Please use this command in the required text channel!")
             raise commands.CommandError(
                 "Command is not executed in the required text channel!"
+            )
+
+    async def _check_voice_channel_whitelisted(self, ctx: commands.Context):
+        """Raises an error if the command is not executed in the required voice channel."""
+        if not whitelisted_voice_channel_id(
+            ctx.author.voice.channel, self.whitelisted_voice_channels
+        ):
+            # Case: Command is not executed in the required text channel
+            await ctx.send("❌ Please use this command in the required voice channel!")
+            raise commands.CommandError(
+                "Command is not executed in the required voice channel!"
             )
 
     async def _check_valid_url(self, ctx: commands.Context, url: str):
@@ -207,6 +231,7 @@ class Music(commands.Cog):
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
+            self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
         )
 
@@ -250,6 +275,7 @@ class Music(commands.Cog):
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
+            self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
             self._check_author_bot_in_same_voice(ctx),
@@ -290,6 +316,7 @@ class Music(commands.Cog):
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
+            self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
             self._check_author_bot_in_same_voice(ctx),
@@ -310,8 +337,8 @@ class Music(commands.Cog):
         """
         await self._before_add(ctx=ctx, url=url)
 
-        # Get the highest priority (lowest value) of the author's roles
-        priority = highest_priority(ctx.author.roles)
+        # Get the lowest priority of the author's roles
+        priority = lowest_priority(ctx.author.roles)
 
         # Create the audio source
         audio_source = AudioSource(yt_url=url, priority=priority)
@@ -364,6 +391,7 @@ class Music(commands.Cog):
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
+            self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
             self._check_author_bot_in_same_voice(ctx),
@@ -426,6 +454,7 @@ class Music(commands.Cog):
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
+            self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
             self._check_author_bot_in_same_voice(ctx),
@@ -460,6 +489,7 @@ class Music(commands.Cog):
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
+            self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
             self._check_author_bot_in_same_voice(ctx),
@@ -485,6 +515,7 @@ class Music(commands.Cog):
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
+            self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
             self._check_author_bot_in_same_voice(ctx),
@@ -524,6 +555,7 @@ class Music(commands.Cog):
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
+            self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
             self._check_author_bot_in_same_voice(ctx),
@@ -563,6 +595,7 @@ class Music(commands.Cog):
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
+            self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
             self._check_author_bot_in_same_voice(ctx),

@@ -1,127 +1,180 @@
-import unittest
-from unittest.mock import MagicMock
+"""Tests for discord_bot/util/role.py."""
+
+from dataclasses import dataclass
+
+import pytest
 
 from discord_bot.util.role import (
     highest_priority,
     lowest_priority,
-    priorities,
-    role_ids,
-    role_names,
-    roles_valid,
-    roles_whitelisted,
+    priority,
+    role_id,
+    role_name,
+    valid_role_id,
+    valid_role_name,
+    whitelisted_role_id,
+    whitelisted_role_name,
 )
 
 
-class TestRole(unittest.TestCase):
-    """Tests all methods under role.py."""
+@dataclass
+class RoleMock:
+    """Mock class for Role."""
 
-    def setUp(self):
-        self.roles1 = [
-            MagicMock(id=832366646576414780),
-            MagicMock(id=542084251038908436),
-            MagicMock(id=248898634924425216),
-            MagicMock(id=385159915918065664),
-            MagicMock(id=686645319718404100),
-            MagicMock(id=248898155867930624),
-            MagicMock(id=560506852127801345),
-            MagicMock(id=248897274002931722),
-        ]
-        self.roles2 = [
-            MagicMock(id=385159915918065664),
-            MagicMock(id=686645319718404100),
-            MagicMock(id=248898155867930624),
-            MagicMock(id=560506852127801345),
-            MagicMock(id=248897274002931722),
-        ]
+    id: int
+    name: str
 
-        self.whitelisted_roles1 = ["DJ", "#ANBU#", "Kage"]
-        self.whitelisted_roles2 = ["DJ", "#ANBU#", "Test123"]
 
-    def test_roles_valid(self):
-        """Tests the roles_valid() method."""
-        self.assertTrue(roles_valid(self.whitelisted_roles1))
-        self.assertFalse(roles_valid(self.whitelisted_roles2))
+@pytest.mark.parametrize(
+    argnames="role",
+    argvalues=[
+        RoleMock(832366646576414780, "DJ"),
+    ],
+)
+def test_role_id(role):
+    """Tests the role_id() method."""
+    assert role_id(role) == role.id
 
-    def test_roles_whitelisted(self):
-        """Tests the roles_whitelisted() method."""
-        self.assertTrue(roles_whitelisted(self.roles1, self.whitelisted_roles1))
-        self.assertFalse(roles_whitelisted(self.roles2, self.whitelisted_roles1))
 
-    def test_role_ids(self):
-        """Tests the role_ids() method."""
-        self.assertEqual(
+@pytest.mark.parametrize(
+    argnames="role",
+    argvalues=[
+        RoleMock(832366646576414780, "DJ"),
+    ],
+)
+def test_role_name(role):
+    """Tests the role_name() method."""
+    assert role_name(role) == role.name
+
+
+@pytest.mark.parametrize(
+    argnames=["role_ids", "expected"],
+    argvalues=[
+        ([832366646576414780, 542084251038908436], True),
+        ([832366646576414780, 832366646576414782], False),
+    ],
+)
+def test_valid_role_id(role_ids, expected):
+    """Tests the valid_role_id() method."""
+    assert valid_role_id(role_ids) == expected
+
+
+@pytest.mark.parametrize(
+    argnames=["role_names", "expected"],
+    argvalues=[
+        (["DJ", "#ANBU#"], True),
+        (["DJ", "DJ123"], False),
+    ],
+)
+def test_valid_role_name(role_names, expected):
+    """Tests the valid_role_name() method."""
+    assert valid_role_name(role_names) == expected
+
+
+@pytest.mark.parametrize(
+    argnames=["roles", "whitelisted_role_ids", "expected"],
+    argvalues=[
+        (
+            [RoleMock(832366646576414780, "DJ")],
+            [832366646576414780, 542084251038908436],
+            True,
+        ),
+        (
+            [RoleMock(248898634924425216, "Kage")],
+            [832366646576414780, 542084251038908436],
+            False,
+        ),
+    ],
+)
+def test_whitelisted_role_id(roles, whitelisted_role_ids, expected):
+    """Tests the whitelisted_role_id() method."""
+    assert whitelisted_role_id(roles, whitelisted_role_ids) == expected
+
+
+@pytest.mark.parametrize(
+    argnames=["roles", "whitelisted_role_names", "expected"],
+    argvalues=[
+        (
+            [RoleMock(832366646576414780, "DJ")],
+            ["DJ", "#ANBU#"],
+            True,
+        ),
+        (
+            [RoleMock(248898634924425216, "Kage")],
+            ["DJ", "#ANBU#"],
+            False,
+        ),
+    ],
+)
+def test_whitelisted_role_name(roles, whitelisted_role_names, expected):
+    """Tests the whitelisted_role_name() method."""
+    assert whitelisted_role_name(roles, whitelisted_role_names) == expected
+
+
+@pytest.mark.parametrize(
+    argnames=["roles", "expected"],
+    argvalues=[
+        (
             [
-                832366646576414780,
-                542084251038908436,
-                248898634924425216,
-                385159915918065664,
-                686645319718404100,
-                248898155867930624,
-                560506852127801345,
-                248897274002931722,
+                RoleMock(832366646576414780, "DJ"),
+                RoleMock(542084251038908436, "#ANBU#"),
+                RoleMock(248898634924425216, "Kage"),
+                RoleMock(385159915918065664, "Jonin"),
+                RoleMock(686645319718404100, "Chunin"),
+                RoleMock(248898155867930624, "Genin"),
+                RoleMock(560506852127801345, "#Hafensänger#"),
+                RoleMock(248897274002931722, "@everyone"),
             ],
-            role_ids(self.roles1),
-        )
-        self.assertEqual(
-            [
-                385159915918065664,
-                686645319718404100,
-                248898155867930624,
-                560506852127801345,
-                248897274002931722,
-            ],
-            role_ids(self.roles2),
-        )
-
-    def test_role_names(self):
-        """Tests the role_names() method."""
-        self.assertEqual(
-            [
-                "DJ",
-                "#ANBU#",
-                "Kage",
-                "Jonin",
-                "Chunin",
-                "Genin",
-                "#Hafensänger#",
-                "@everyone",
-            ],
-            role_names(self.roles1),
-        )
-
-        self.assertEqual(
-            [
-                "Jonin",
-                "Chunin",
-                "Genin",
-                "#Hafensänger#",
-                "@everyone",
-            ],
-            role_names(self.roles2),
-        )
-
-    def test_priorities(self):
-        """Tests the priorities() method."""
-        self.assertEqual(
             [0, 1, 1, 2, 3, 4, 5, 6],
-            priorities(self.roles1),
-        )
-
-        self.assertEqual(
-            [2, 3, 4, 5, 6],
-            priorities(self.roles2),
-        )
-
-    def test_lowest_priority(self):
-        """Tests the lowest_priority() method."""
-        self.assertEqual(6, lowest_priority(self.roles1))
-        self.assertEqual(6, lowest_priority(self.roles2))
-
-    def test_highest_priority(self):
-        """Tests the highest_priority() method."""
-        self.assertEqual(0, highest_priority(self.roles1))
-        self.assertEqual(2, highest_priority(self.roles2))
+        ),
+    ],
+)
+def test_priority(roles, expected):
+    """Tests the priority() method."""
+    assert priority(roles) == expected
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.mark.parametrize(
+    argnames=["roles", "expected"],
+    argvalues=[
+        (
+            [
+                RoleMock(832366646576414780, "DJ"),
+                RoleMock(542084251038908436, "#ANBU#"),
+                RoleMock(248898634924425216, "Kage"),
+                RoleMock(385159915918065664, "Jonin"),
+                RoleMock(686645319718404100, "Chunin"),
+                RoleMock(248898155867930624, "Genin"),
+                RoleMock(560506852127801345, "#Hafensänger#"),
+                RoleMock(248897274002931722, "@everyone"),
+            ],
+            0,
+        ),
+    ],
+)
+def test_lowest_priority(roles, expected):
+    """Tests the lowest_priority() method."""
+    assert lowest_priority(roles) == expected
+
+
+@pytest.mark.parametrize(
+    argnames=["roles", "expected"],
+    argvalues=[
+        (
+            [
+                RoleMock(832366646576414780, "DJ"),
+                RoleMock(542084251038908436, "#ANBU#"),
+                RoleMock(248898634924425216, "Kage"),
+                RoleMock(385159915918065664, "Jonin"),
+                RoleMock(686645319718404100, "Chunin"),
+                RoleMock(248898155867930624, "Genin"),
+                RoleMock(560506852127801345, "#Hafensänger#"),
+                RoleMock(248897274002931722, "@everyone"),
+            ],
+            6,
+        ),
+    ],
+)
+def test_highest_priority(roles, expected):
+    """Tests the highest_priority() method."""
+    assert highest_priority(roles) == expected

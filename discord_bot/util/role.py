@@ -1,61 +1,85 @@
+"""Utility functions for roles."""
+
 from discord import Role
 
-# Wrapper from role ids to role names
-role_id_to_name = {
-    832366646576414780: "DJ",
-    542084251038908436: "#ANBU#",
-    248898634924425216: "Kage",
-    385159915918065664: "Jonin",
-    686645319718404100: "Chunin",
-    248898155867930624: "Genin",
-    560506852127801345: "#Hafensänger#",
-    248897274002931722: "@everyone",
-}
+__WHITELISTED_ROLES__ = [
+    832366646576414780,
+    542084251038908436,
+    248898634924425216,
+    385159915918065664,
+    686645319718404100,
+    248898155867930624,
+    560506852127801345,
+]
 
-# Wrapper from role ids to priority values
-# Lower values represents higher priorities
-role_id_to_priority = {
-    832366646576414780: 0,
-    542084251038908436: 1,
-    248898634924425216: 1,
-    385159915918065664: 2,
-    686645319718404100: 3,
-    248898155867930624: 4,
-    560506852127801345: 5,
-    248897274002931722: 6,
+__ROLES__ = {
+    832366646576414780: ("DJ", 0),
+    542084251038908436: ("#ANBU#", 1),
+    248898634924425216: ("Kage", 1),
+    385159915918065664: ("Jonin", 2),
+    686645319718404100: ("Chunin", 3),
+    248898155867930624: ("Genin", 4),
+    560506852127801345: ("#Hafensänger#", 5),
+    248897274002931722: ("@everyone", 6),
 }
 
 
-def roles_valid(roles: list[str]) -> bool:
-    """Returns True if all roles are valid."""
-    return all(role in list(role_id_to_name.values()) for role in roles)
+def role_id(role: Role) -> int:
+    """Returns the id of the given role."""
+    return role.id
 
 
-def roles_whitelisted(roles: list[Role], whitelisted_roles: list[str]) -> bool:
-    """Returns True if at least one role is in the whitelisted roles."""
-    return any(role in whitelisted_roles for role in role_names(roles))
+def role_name(role: Role) -> str:
+    """Returns the name of the given role."""
+    return role.name
 
 
-def role_ids(roles: list[Role]) -> list[int]:
-    """Returns the ids of the given roles."""
-    return [role.id for role in roles]
+def valid_role_id(role_ids: list[int]) -> bool:
+    """Returns True if the role ids are valid roles."""
+    return all(role_id in __ROLES__ for role_id in role_ids)
 
 
-def role_names(roles: list[Role]) -> list[str | None]:
-    """Returns the names of the given roles."""
-    return [role_id_to_name.get(role.id, None) for role in roles]
+def valid_role_name(role_names: list[str]) -> bool:
+    """Returns True if the role names are valid roles."""
+    return all(
+        any(role_name == role for role, _ in __ROLES__.values())
+        for role_name in role_names
+    )
 
 
-def priorities(roles: list[Role]) -> list[int]:
-    """Returns the priority values of the given roles."""
-    return [role_id_to_priority.get(role.id, 10) for role in roles]
+def whitelisted_role_id(
+    roles: list[Role],
+    whitelisted_role_ids: list[int],
+) -> bool:
+    """Returns True if the role is in the list of whitelisted roles."""
+    return any(
+        valid_role_id(whitelisted_role_ids) and role_id(role) in whitelisted_role_ids
+        for role in roles
+    )
+
+
+def whitelisted_role_name(
+    roles: list[Role],
+    whitelisted_role_names: list[str],
+) -> bool:
+    """Returns True if the role is in the list of whitelisted roles."""
+    return any(
+        valid_role_name(whitelisted_role_names)
+        and role_name(role) in whitelisted_role_names
+        for role in roles
+    )
+
+
+def priority(roles: list[Role]) -> int | list[int]:
+    """Returns the priority value of the given role."""
+    return [__ROLES__.get(role.id, (None, 10))[1] for role in roles]
 
 
 def lowest_priority(roles: list[Role]) -> int:
-    """Returns the lowest priority value (highest value) of the given roles."""
-    return max(priorities(roles))
+    """Returns the lowest priority value of the given roles."""
+    return min(priority(roles))
 
 
 def highest_priority(roles: list[Role]) -> int:
-    """Returns the highest priority value (lowest value) of the given roles."""
-    return min(priorities(roles))
+    """Returns the highest priority value of the given roles."""
+    return max(priority(roles))
