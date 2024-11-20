@@ -17,7 +17,7 @@ Our bot currently supports the following commands:
 | !skip    | Skips the currently played audio source in the playlist.         |
 | !reset   | Stops the currently played audio source and clears the playlist. |
 | !show    | Shows the audio sources from the playlist.                       |
-| !volume  | Changes the volume of the music player.                          |
+| !set     | Changes the configuration of the music player.                   |
 
 ## Run the Bot on a Linux Server with ``screen`` 💻
 This guide explains how to run the discord bot even after closing your SSH connection using the ``screen`` package from Linux.

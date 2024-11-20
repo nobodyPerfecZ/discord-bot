@@ -61,9 +61,14 @@ def whitelisted_role_name(
     )
 
 
-def priority(roles: list[Role]) -> int | list[int]:
+def priority(roles: list[Role]) -> list[int]:
     """Returns the priority value of the given role."""
-    return [__ROLES__.get(role.id, (None, 10))[1] for role in roles]
+    return [
+        __ROLES__.get(
+            role.id, (None, max(priority for _, priority in __ROLES__.values()) + 1)
+        )[1]
+        for role in roles
+    ]
 
 
 def lowest_priority(roles: list[Role]) -> int:

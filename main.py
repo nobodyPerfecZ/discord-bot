@@ -24,7 +24,8 @@ async def main(client: commands.Bot, **kwargs):
 
 if __name__ == "__main__":
     # Enable logging of the bot
-    discord.utils.setup_logging(level=logging.WARNING)  # logging.DEBUG for debugging
+    # level=logging.DEBUG for debugging
+    discord.utils.setup_logging(level=logging.WARNING)
 
     # Get all intents
     intents = discord.Intents.all()

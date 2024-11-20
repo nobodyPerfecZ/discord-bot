@@ -99,6 +99,7 @@ class Music(commands.Cog):
 
         self.bot = bot
 
+        # Whitelisted roles, text_channels and voice_channels
         self.whitelisted_roles = whitelisted_roles
         self.whitelisted_text_channels = whitelisted_text_channels
         self.whitelisted_voice_channels = whitelisted_voice_channels
@@ -114,6 +115,9 @@ class Music(commands.Cog):
         # Initial state of the music player
         self.playlist = Playlist()
         self.music_state = MusicState.DISCONNECT
+
+        # List of keys for the set command
+        self.keys = ["volume", "disconnect_timeout"]
 
         # Start the background tasks
         self.disconnect.start()
@@ -141,7 +145,7 @@ class Music(commands.Cog):
             )
             raise commands.CommandError("Bot is not connected to a voice channel!")
 
-    async def _check_author_bot_in_same_voice(self, ctx: commands.Context):
+    async def _check_author_bot_in_same_voice_channel(self, ctx: commands.Context):
         """Raises an error if the author and the bot are not in the same voice channel."""
         if ctx.author.voice.channel != ctx.voice_client.channel:
             # Case: Author and bot are not in the same voice channel
@@ -158,6 +162,13 @@ class Music(commands.Cog):
             # Case: Bot is not playing/pausing an audio stream
             await ctx.send("❌ Please play a song, before using this command!")
             raise commands.CommandError("Bot does not play/pause any song!")
+
+    async def _check_author_role_whitelisted(self, ctx: commands.Context):
+        """Raises an error if the author does not have the required role."""
+        if not whitelisted_role_id(ctx.author.roles, self.whitelisted_roles):
+            # Case: Author does not have the required role
+            await ctx.send("❌ You do not have the required role to use this command!")
+            raise commands.CommandError("Author does not have the required role!")
 
     async def _check_text_channel_whitelisted(self, ctx: commands.Context):
         """Raises an error if the command is not executed in the required text channel."""
@@ -192,6 +203,42 @@ class Music(commands.Cog):
             # Case: Volume is not in between of 0 and 100
             await ctx.send("❌ Please choose a volume between 0 and 100!")
             raise commands.CommandError("Volume is not in between of 0 and 100!")
+
+    async def _check_valid_disconnect_timeout(
+        self, ctx: commands.Context, disconnect_timeout: int
+    ):
+        """Raises an error if the disconnect timeout is not higher than 0."""
+        if disconnect_timeout <= 0:
+            # Case: Disconnect timeout is not higher than 0
+            await ctx.send("❌ Please choose a disconnect timeout higher than 0!")
+            raise commands.CommandError("Disconnect timeout is not higher than 0!")
+
+    async def _check_valid_key(self, ctx: commands.Context, key: str):
+        """Raises an error if the key is not valid."""
+        if key not in self.keys:
+            # Case: Key is not valid
+            await ctx.send("❌ Please choose a valid key!")
+            raise commands.CommandError("Key is not valid!")
+
+    async def _check_valid_value(
+        self, ctx: commands.Context, key: str, values: tuple[str, ...]
+    ):
+        """Raises an error if the value for key is not valid."""
+        if key == "volume":
+            try:
+                volume = int(values[0])
+            except Exception as e:
+                await ctx.send(f"❌ Please choose a valid value for {key}!")
+                raise commands.CommandError(f"Value for key={key} is not valid!") from e
+            await self._check_valid_volume(ctx, volume)
+
+        elif key == "disconnect_timeout":
+            try:
+                disconnect_timeout = int(values[0])
+            except Exception as e:
+                await ctx.send(f"❌ Please choose a valid value for {key}!")
+                raise commands.CommandError(f"Value for key={key} is not valid!") from e
+            await self._check_valid_disconnect_timeout(ctx, disconnect_timeout)
 
     @tasks.loop(seconds=60)
     async def disconnect(self):
@@ -278,7 +325,7 @@ class Music(commands.Cog):
             self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice(ctx),
+            self._check_author_bot_in_same_voice_channel(ctx),
         )
 
     @commands.command(aliases=["Leave"])
@@ -319,7 +366,7 @@ class Music(commands.Cog):
             self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice(ctx),
+            self._check_author_bot_in_same_voice_channel(ctx),
             self._check_valid_url(ctx, url),
         )
 
@@ -394,7 +441,7 @@ class Music(commands.Cog):
             self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice(ctx),
+            self._check_author_bot_in_same_voice_channel(ctx),
         )
 
     @commands.command(aliases=["Play"])
@@ -457,7 +504,7 @@ class Music(commands.Cog):
             self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice(ctx),
+            self._check_author_bot_in_same_voice_channel(ctx),
             self._check_bot_is_streaming(ctx),
         )
 
@@ -492,7 +539,7 @@ class Music(commands.Cog):
             self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice(ctx),
+            self._check_author_bot_in_same_voice_channel(ctx),
             self._check_bot_is_streaming(ctx),
         )
 
@@ -518,7 +565,7 @@ class Music(commands.Cog):
             self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice(ctx),
+            self._check_author_bot_in_same_voice_channel(ctx),
         )
 
     @commands.command(aliases=["Reset"])
@@ -558,7 +605,7 @@ class Music(commands.Cog):
             self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice(ctx),
+            self._check_author_bot_in_same_voice_channel(ctx),
         )
 
     @commands.command(aliases=["Show"])
@@ -590,40 +637,63 @@ class Music(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    async def _before_volume(self, ctx: commands.Context, *, volume: int):
-        """Checks for the volume command before performing it."""
+    async def _before_set(
+        self, ctx: commands.Context, key: str, values: tuple[str, ...]
+    ):
+        """Checks for the set command before performing it."""
         await asyncio.gather(
             self._check_author_role_whitelisted(ctx),
             self._check_text_channel_whitelisted(ctx),
             self._check_voice_channel_whitelisted(ctx),
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice(ctx),
-            self._check_bot_is_streaming(ctx),
-            self._check_valid_volume(ctx, volume),
+            self._check_author_bot_in_same_voice_channel(ctx),
+            self._check_valid_key(ctx, key),
+            self._check_valid_value(ctx, key, values),
         )
 
-    @commands.command(aliases=["Volume"])
-    async def volume(self, ctx: commands.Context, *, volume: int):
+    @commands.command(aliases=["Set"])
+    async def set(self, ctx: commands.Context, key: str, *values):
         """
-        Changes the volume of the music player.
+        Changes the value of the key.
 
         Args:
             ctx (commands.Context):
                 The discord context
 
-            volume (int):
-                The new volume
-        """
-        await self._before_volume(ctx=ctx, volume=volume)
+            key (str):
+                The key to change
 
-        if self.curr_volume != volume:
-            # Case: New volume is not the same as before
-            self.curr_volume = volume
-            ctx.voice_client.source.volume = self.curr_volume / 100
-            return await ctx.send(f"✅ Changed volume to ``{self.curr_volume}``!")
-        # Case: New volume is the same as before
-        await ctx.send(f"⚠️ Already using volume ``{self.curr_volume}``!")
+            values (tuple[str, ...]):
+                The new values
+        """
+        await self._before_set(ctx=ctx, key=key, values=values)
+
+        if key == "volume":
+            volume = int(values[0])
+            if self.curr_volume != volume:
+                # Case: New volume is not the same as before
+                self.curr_volume = volume
+                if ctx.voice_client.is_playing() or ctx.voice_client.is_paused():
+                    # Case: Bot plays/pause a song
+                    ctx.voice_client.source.volume = self.curr_volume / 100
+                return await ctx.send(f"✅ Changed volume to ``{self.curr_volume}``!")
+            # Case: New volume is the same as before
+            return await ctx.send(f"⚠️ Already using volume ``{self.curr_volume}``!")
+
+        elif key == "disconnect_timeout":
+            disconnect_timeout = int(values[0])
+            if self.end_disconnect_timeout != disconnect_timeout:
+                # Case: New disconnect timeout is not the same as before
+                self.end_disconnect_timeout = disconnect_timeout
+                self.curr_disconnect_timeout = 0
+                return await ctx.send(
+                    f"✅ Changed disconnect timeout to ``{self.end_disconnect_timeout}``!"
+                )
+            # Case: New disconnect timeout is the same as before
+            return await ctx.send(
+                f"⚠️ Already using disconnect timeout ``{self.end_disconnect_timeout}``!"
+            )
 
     @staticmethod
     def help_information() -> discord.Embed:
@@ -664,8 +734,8 @@ class Music(commands.Cog):
             inline=False,
         )
         embed.add_field(
-            name="!volume <volume>",
-            value="Changes the volume of the music player.",
+            name="!set <key> <value1> ...",
+            value="Changes the configuration of the music player.",
             inline=False,
         )
         return embed
