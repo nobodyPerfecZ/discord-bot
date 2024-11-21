@@ -1,5 +1,7 @@
 """Disconnect Background task for the Discord bot."""
 
+# pylint: disable=W0212
+
 import asyncio
 import logging
 
@@ -78,7 +80,15 @@ class Disconnect(commands.Cog):
         timeout: int,
     ):
         """Checks for the timeout command before performing it."""
-        await asyncio.gather(self._check_valid_timeout(ctx, timeout))
+        manager = self.bot.get_cog("Manager")
+        music = self.bot.get_cog("Music")
+        await asyncio.gather(
+            manager._check_author_role_is_whitelisted(ctx),
+            manager._check_text_channel_is_whitelisted(ctx),
+            manager._check_voice_channel_is_whitelisted(ctx),
+            music._check_text_in_guild(ctx),
+            self._check_valid_timeout(ctx, timeout),
+        )
 
     @commands.command(aliases=["Timeout"])
     async def timeout(self, ctx: commands.Context, *, timeout: int):

@@ -471,9 +471,6 @@ class Music(commands.Cog):
             manager._check_text_channel_is_whitelisted(ctx),
             manager._check_voice_channel_is_whitelisted(ctx),
             self._check_text_in_guild(ctx),
-            self._check_author_in_voice_channel(ctx),
-            self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice_channel(ctx),
             self._check_valid_volume(ctx, volume),
         )
 
@@ -494,7 +491,9 @@ class Music(commands.Cog):
         if self.curr_volume != volume:
             # Case: New volume is not the same as before
             self.curr_volume = volume
-            if ctx.voice_client.is_playing() or ctx.voice_client.is_paused():
+            if ctx.voice_client and (
+                ctx.voice_client.is_playing() or ctx.voice_client.is_paused()
+            ):
                 # Case: Bot plays/pause a song
                 ctx.voice_client.source.volume = self.curr_volume / 100
             return await ctx.send(f"✅ Changed volume to ``{self.curr_volume}``!")

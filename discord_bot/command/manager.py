@@ -1,5 +1,7 @@
 """Manager commands (whitelists) for the Discord bot."""
 
+import logging
+
 import discord
 from discord.ext import commands
 
@@ -13,10 +15,12 @@ from discord_bot.util.voice_channel import (
     whitelisted_voice_channel_id,
 )
 
+logger = logging.getLogger("discord")
+
 
 class Manager(commands.Cog):
     """
-    This class represents a suite of commands to manage the whitelists to control a music bot in a Discord Server.
+    This class represents a suite of commands to add/change/set all parameters of the music bot.
 
     Attributes:
         whitelisted_roles (dict[str, list[int]]):
@@ -32,18 +36,28 @@ class Manager(commands.Cog):
     def __init__(
         self,
         bot: commands.Bot,
-        whitelisted_roles: list[int],
-        whitelisted_text_channels: list[int],
-        whitelisted_voice_channels: list[int],
+        whitelisted_roles: dict[str, list[int]],
+        whitelisted_text_channels: dict[str, list[int]],
+        whitelisted_voice_channels: dict[str, list[int]],
         **kwargs
     ):
-        if not valid_role_id(whitelisted_roles):
+
+        if all(
+            not valid_role_id(whitelisted_role)
+            for whitelisted_role in whitelisted_roles.values()
+        ):
             raise ValueError("whitelisted_roles needs to be in __ROLES__!")
-        if not valid_text_channel_id(whitelisted_text_channels):
+        if all(
+            not valid_text_channel_id(whitelisted_text_channel)
+            for whitelisted_text_channel in whitelisted_text_channels.values()
+        ):
             raise ValueError(
                 "whitelisted_text_channels need to be in __TEXT_CHANNELS__!"
             )
-        if not valid_voice_channel_id(whitelisted_voice_channels):
+        if all(
+            not valid_voice_channel_id(whitelisted_voice_channel)
+            for whitelisted_voice_channel in whitelisted_voice_channels.values()
+        ):
             raise ValueError(
                 "whitelisted_voice_channels need to be in __VOICE_CHANNELS__!"
             )
@@ -55,14 +69,18 @@ class Manager(commands.Cog):
 
     async def _check_author_role_is_whitelisted(self, ctx: commands.Context):
         """Raises an error if the author does not have the required role."""
-        if not whitelisted_role_id(ctx.author.roles, self.whitelisted_roles):
+        if not whitelisted_role_id(
+            ctx.author.roles, self.whitelisted_roles[ctx.command.name]
+        ):
             # Case: Author does not have the required role
             await ctx.send("❌ You do not have the required role to use this command!")
             raise commands.CommandError("Author does not have the required role!")
 
     async def _check_text_channel_is_whitelisted(self, ctx: commands.Context):
         """Raises an error if the command is not executed in the required text channel."""
-        if not whitelisted_text_channel_id(ctx.channel, self.whitelisted_text_channels):
+        if not whitelisted_text_channel_id(
+            ctx.channel, self.whitelisted_text_channels[ctx.command.name]
+        ):
             # Case: Command is not executed in the required text channel
             await ctx.send("❌ Please use this command in the required text channel!")
             raise commands.CommandError(
@@ -72,7 +90,7 @@ class Manager(commands.Cog):
     async def _check_voice_channel_is_whitelisted(self, ctx: commands.Context):
         """Raises an error if the command is not executed in the required voice channel."""
         if not whitelisted_voice_channel_id(
-            ctx.author.voice.channel, self.whitelisted_voice_channels
+            ctx.author.voice.channel, self.whitelisted_voice_channels[ctx.command.name]
         ):
             # Case: Command is not executed in the required text channel
             await ctx.send("❌ Please use this command in the required voice channel!")
