@@ -4,7 +4,6 @@
 
 import asyncio
 import logging
-from enum import IntEnum
 
 import discord
 import yt_dlp
@@ -15,30 +14,6 @@ from discord_bot.transformer import YTDLVolumeTransformer
 from discord_bot.util.role import lowest_priority
 
 logger = logging.getLogger("discord")
-
-
-class MusicState(IntEnum):
-    """
-    This class represents different states of an audio player.
-
-    Attributes:
-        DISCONNECT (int):
-            The audio player is disconnected from the voice channel
-
-        CONNECT (int):
-            The audio player is connected to the voice channel (and does not play/pause any audio stream)
-
-        PLAY (int):
-            The audioplayer is playing an audio stream
-
-        PAUSE (int):
-            The audio player is pausing an audio stream
-    """
-
-    DISCONNECT = 1
-    CONNECT = 2
-    PLAY = 3
-    PAUSE = 4
 
 
 class Music(commands.Cog):
@@ -82,10 +57,12 @@ class Music(commands.Cog):
 
         # Initial state of the music player
         self.playlist = Playlist()
-        self.music_state = MusicState.DISCONNECT
 
         # List of keys for the set command
         self.keys = ["volume", "disconnect_timeout"]
+
+        # Flag to leave the voice channel
+        self.should_leave = False
 
         # Start the background tasks
         self.disconnect.start()
@@ -148,11 +125,15 @@ class Music(commands.Cog):
     async def _check_valid_disconnect_timeout(
         self, ctx: commands.Context, disconnect_timeout: int
     ):
-        """Raises an error if the disconnect timeout is not higher than 0."""
-        if disconnect_timeout <= 0:
+        """Raises an error if the disconnect timeout is not higher than or equal to 0."""
+        if disconnect_timeout < 0:
             # Case: Disconnect timeout is not higher than 0
-            await ctx.send("❌ Please choose a disconnect timeout higher than 0!")
-            raise commands.CommandError("Disconnect timeout is not higher than 0!")
+            await ctx.send(
+                "❌ Please choose a disconnect timeout higher than or equal to 0!"
+            )
+            raise commands.CommandError(
+                "Disconnect timeout is not higher than or equal to 0!"
+            )
 
     async def _check_valid_key(self, ctx: commands.Context, key: str):
         """Raises an error if the key is not valid."""
@@ -186,8 +167,8 @@ class Music(commands.Cog):
         """Background Task to handle the disconnect timeout."""
         if (
             self.end_disconnect_timeout == 0
-            or self.music_state == MusicState.DISCONNECT
-            or self.music_state == MusicState.PLAY
+            or len(self.bot.voice_clients) == 0
+            or self.bot.voice_clients[0].is_playing()
         ):
             # Case: Reset the disconnect timeout
             self.curr_disconnect_timeout = 0
@@ -198,9 +179,6 @@ class Music(commands.Cog):
 
         if self.curr_disconnect_timeout >= self.end_disconnect_timeout:
             # Case: Timeout has reached
-
-            # Set the music state to disconnect
-            self.music_state = MusicState.DISCONNECT
 
             # Clear the playlist
             await self.playlist.clear()
@@ -239,7 +217,6 @@ class Music(commands.Cog):
         author_channel = ctx.author.voice.channel
         if ctx.voice_client is None:
             # Case: Bot is not in a voice channel
-            self.music_state = MusicState.CONNECT
             await author_channel.connect()
             return await ctx.send(f"✅ Moved to ``{author_channel}``!")
         else:
@@ -252,7 +229,6 @@ class Music(commands.Cog):
             # Case: Bot is not in the same voice channel as the author
             if ctx.voice_client.is_playing():
                 # Case: Bot is currently playing - pause the music
-                self.music_state = MusicState.PAUSE
                 ctx.voice_client.pause()
 
             await ctx.voice_client.move_to(author_channel)
@@ -284,10 +260,8 @@ class Music(commands.Cog):
         """
         await self._before_leave(ctx=ctx)
 
-        channel = ctx.voice_client.channel
-
-        # Set the music state to disconnect
-        self.music_state = MusicState.DISCONNECT
+        # Safe the current voice channel
+        voice_channel = ctx.voice_client.channel
 
         # Clear the playlist
         await self.playlist.clear()
@@ -298,10 +272,13 @@ class Music(commands.Cog):
         # Reset the disconnect time
         self.curr_disconnect_timeout = 0
 
+        # Set the flag to leave the voice channel
+        self.should_leave = True
+
         # Disconnect the bot from the voice channel
         await ctx.voice_client.disconnect(force=False)
 
-        return await ctx.send(f"✅ Left ``{channel}``!")
+        return await ctx.send(f"✅ Left ``{voice_channel}``!")
 
     async def _before_add(self, ctx: commands.Context, *, url: str):
         """Checks for the add command before performing it."""
@@ -344,19 +321,13 @@ class Music(commands.Cog):
 
     async def _play_next(self, ctx: commands.Context):
         """Plays the next song in the playlist."""
-        if (
-            self.music_state == MusicState.DISCONNECT
-            or self.music_state == MusicState.CONNECT
-        ):
-            # Case: Bot never played/paused a song before
+        if self.should_leave:
+            # Case: Bot should leave the voice channel
+            self.should_leave = False
             return
 
         if await self.playlist.empty():
-            self.music_state = MusicState.CONNECT
             return await ctx.send("⚠️ The playlist no longer contains any songs!")
-
-        # Get the voice client
-        voice_client = ctx.voice_client
 
         # Play the next song
         audio_source = await self.playlist.pop()
@@ -365,14 +336,13 @@ class Music(commands.Cog):
                 audio_source=audio_source,
                 volume=self.curr_volume,
             )
-            voice_client.play(
+            ctx.voice_client.play(
                 player,
                 after=lambda _: asyncio.run_coroutine_threadsafe(
                     coro=self._play_next(ctx),
                     loop=self.bot.loop,
                 ),
             )
-            self.music_state = MusicState.PLAY
             await ctx.send(f"✅ Next playing {player.title}!")
         except yt_dlp.utils.YoutubeDLError:
             await ctx.send(
@@ -412,7 +382,6 @@ class Music(commands.Cog):
 
         if ctx.voice_client.is_paused():
             # Case: Bot is paused
-            self.music_state = MusicState.PLAY
             ctx.voice_client.resume()
             return await ctx.send(f"✅ Resuming ``{ctx.voice_client.source.title}``!")
 
@@ -430,7 +399,6 @@ class Music(commands.Cog):
                 volume=self.curr_volume,
                 loop=self.bot.loop,
             )
-            self.music_state = MusicState.PLAY
             ctx.voice_client.play(
                 player,
                 after=lambda _: asyncio.run_coroutine_threadsafe(
@@ -472,7 +440,6 @@ class Music(commands.Cog):
 
         if ctx.voice_client.is_playing():
             # Case: Bot plays an audio source
-            self.music_state = MusicState.PAUSE
             ctx.voice_client.pause()
             return await ctx.send(f"✅ Paused ``{ctx.voice_client.source.title}``!")
 
@@ -533,9 +500,6 @@ class Music(commands.Cog):
                 The discord context
         """
         await self._before_reset(ctx=ctx)
-
-        # Set the music state to connect
-        self.music_state = MusicState.CONNECT
 
         # Clear the playlist
         await self.playlist.clear()
