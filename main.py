@@ -9,7 +9,7 @@ import yaml
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from discord_bot.command import Help, Music, Manager
+from discord_bot.command import Disconnect, Help, Manager, Music
 
 # Load the environment variables
 load_dotenv()
@@ -20,6 +20,7 @@ async def main(client: commands.Bot, **kwargs):
     async with client:
         await client.add_cog(Music(client, **kwargs["music"]))
         await client.add_cog(Manager(client, **kwargs["manager"]))
+        await client.add_cog(Disconnect(client, **kwargs["disconnect"]))
         await client.start(token=os.environ["__DISCORD_API_KEY__"])
 
 

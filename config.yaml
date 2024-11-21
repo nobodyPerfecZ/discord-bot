@@ -1,5 +1,4 @@
 music:
-  disconnect_timeout: 600
   volume: 50
 
 manager:
@@ -27,3 +26,6 @@ manager:
     - 248901495058202634
     - 248901340309225472
     - 936729507937808414
+
+disconnect:
+  timeout: 600

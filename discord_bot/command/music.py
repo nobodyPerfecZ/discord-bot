@@ -7,7 +7,7 @@ import logging
 
 import discord
 import yt_dlp
-from discord.ext import commands, tasks
+from discord.ext import commands
 
 from discord_bot.audio import AudioSource, Playlist
 from discord_bot.transformer import YTDLVolumeTransformer
@@ -26,45 +26,27 @@ class Music(commands.Cog):
 
         volume (int):
             The starting volume with a value in between of 0 and 100
-
-        disconnect_timeout (int):
-            The time in seconds, where the bot leaves the server and resets its playlist
     """
 
     def __init__(
         self,
         bot: commands.Bot,
         volume: int = 50,
-        disconnect_timeout: int = 600,
         **kwargs,
     ):
         if volume < 0 or volume > 100:
             raise ValueError("volume needs to be in between of 0 and 100!")
-        if disconnect_timeout < 0:
-            raise ValueError(
-                "disconnect_timeout needs to be higher than or equal to 0!"
-            )
 
         self.bot = bot
 
         # Current volume of the music player
         self.curr_volume = volume
 
-        # End/Current disconnect timeout of the music player
-        self.end_disconnect_timeout = disconnect_timeout
-        self.curr_disconnect_timeout = 0
-
         # Initial state of the music player
         self.playlist = Playlist()
 
-        # List of keys for the set command
-        self.keys = ["volume", "disconnect_timeout"]
-
         # Flag to leave the voice channel
         self.should_leave = False
-
-        # Start the background tasks
-        self.disconnect.start()
 
     async def _check_text_in_guild(self, ctx: commands.Context):
         """Raises an error if the text is written in a private text channel."""
@@ -120,73 +102,6 @@ class Music(commands.Cog):
             # Case: Volume is not in between of 0 and 100
             await ctx.send("❌ Please choose a volume between 0 and 100!")
             raise commands.CommandError("Volume is not in between of 0 and 100!")
-
-    async def _check_valid_disconnect_timeout(
-        self, ctx: commands.Context, disconnect_timeout: int
-    ):
-        """Raises an error if the disconnect timeout is not higher than or equal to 0."""
-        if disconnect_timeout < 0:
-            # Case: Disconnect timeout is not higher than 0
-            await ctx.send(
-                "❌ Please choose a disconnect timeout higher than or equal to 0!"
-            )
-            raise commands.CommandError(
-                "Disconnect timeout is not higher than or equal to 0!"
-            )
-
-    async def _check_valid_key(self, ctx: commands.Context, key: str):
-        """Raises an error if the key is not valid."""
-        if key not in self.keys:
-            # Case: Key is not valid
-            await ctx.send("❌ Please choose a valid key!")
-            raise commands.CommandError("Key is not valid!")
-
-    async def _check_valid_value(
-        self, ctx: commands.Context, key: str, values: tuple[str, ...]
-    ):
-        """Raises an error if the value for key is not valid."""
-        if key == "volume":
-            try:
-                volume = int(values[0])
-            except Exception as e:
-                await ctx.send(f"❌ Please choose a valid value for {key}!")
-                raise commands.CommandError(f"Value for key={key} is not valid!") from e
-            await self._check_valid_volume(ctx, volume)
-
-        elif key == "disconnect_timeout":
-            try:
-                disconnect_timeout = int(values[0])
-            except Exception as e:
-                await ctx.send(f"❌ Please choose a valid value for {key}!")
-                raise commands.CommandError(f"Value for key={key} is not valid!") from e
-            await self._check_valid_disconnect_timeout(ctx, disconnect_timeout)
-
-    @tasks.loop(seconds=60)
-    async def disconnect(self):
-        """Background Task to handle the disconnect timeout."""
-        if (
-            self.end_disconnect_timeout == 0
-            or len(self.bot.voice_clients) == 0
-            or self.bot.voice_clients[0].is_playing()
-        ):
-            # Case: Reset the disconnect timeout
-            self.curr_disconnect_timeout = 0
-            return
-
-        # Case: Bot is currently pausing or connected to a voice channel
-        self.curr_disconnect_timeout += 60
-
-        if self.curr_disconnect_timeout >= self.end_disconnect_timeout:
-            # Case: Timeout has reached
-
-            # Clear the playlist
-            await self.playlist.clear()
-
-            # Reset the disconnect time
-            self.curr_disconnect_timeout = 0
-
-            # Disconnect the bot from the voice channel
-            await self.bot.voice_clients[0].disconnect(force=False)
 
     async def _before_join(self, ctx: commands.Context):
         """Checks for the leave command before performing it."""
@@ -263,7 +178,7 @@ class Music(commands.Cog):
         await self.playlist.clear()
 
         # Reset the disconnect time
-        self.curr_disconnect_timeout = 0
+        self.bot.get_cog("Disconnect").curr_timeout = 0
 
         # Set the flag to leave the voice channel
         self.should_leave = True
@@ -498,7 +413,7 @@ class Music(commands.Cog):
         await self.playlist.clear()
 
         # Reset the disconnect time
-        self.curr_disconnect_timeout = 0
+        self.bot.get_cog("Disconnect").curr_timeout = 0
 
         if ctx.voice_client.is_playing() or ctx.voice_client.is_paused():
             # Case: Bot plays/pause a song
@@ -548,10 +463,8 @@ class Music(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    async def _before_set(
-        self, ctx: commands.Context, key: str, values: tuple[str, ...]
-    ):
-        """Checks for the set command before performing it."""
+    async def _before_volume(self, ctx: commands.Context, volume: int):
+        """Checks for the volume command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
             manager._check_author_role_is_whitelisted(ctx),
@@ -561,52 +474,32 @@ class Music(commands.Cog):
             self._check_author_in_voice_channel(ctx),
             self._check_bot_in_voice_channel(ctx),
             self._check_author_bot_in_same_voice_channel(ctx),
-            self._check_valid_key(ctx, key),
-            self._check_valid_value(ctx, key, values),
+            self._check_valid_volume(ctx, volume),
         )
 
-    @commands.command(aliases=["Set"])
-    async def set(self, ctx: commands.Context, key: str, *values):
+    @commands.command(aliases=["Volume"])
+    async def volume(self, ctx: commands.Context, *, volume: int):
         """
-        Changes the value of the key.
+        Set the volume of the bot.
 
         Args:
             ctx (commands.Context):
                 The discord context
 
-            key (str):
-                The key to change
-
-            values (tuple[str, ...]):
-                The new values
+            volume (int):
+                The new volume in between of 0 and 100
         """
-        await self._before_set(ctx=ctx, key=key, values=values)
+        await self._before_volume(ctx, volume)
 
-        if key == "volume":
-            volume = int(values[0])
-            if self.curr_volume != volume:
-                # Case: New volume is not the same as before
-                self.curr_volume = volume
-                if ctx.voice_client.is_playing() or ctx.voice_client.is_paused():
-                    # Case: Bot plays/pause a song
-                    ctx.voice_client.source.volume = self.curr_volume / 100
-                return await ctx.send(f"✅ Changed volume to ``{self.curr_volume}``!")
-            # Case: New volume is the same as before
-            return await ctx.send(f"⚠️ Already using volume ``{self.curr_volume}``!")
-
-        elif key == "disconnect_timeout":
-            disconnect_timeout = int(values[0])
-            if self.end_disconnect_timeout != disconnect_timeout:
-                # Case: New disconnect timeout is not the same as before
-                self.end_disconnect_timeout = disconnect_timeout
-                self.curr_disconnect_timeout = 0
-                return await ctx.send(
-                    f"✅ Changed disconnect timeout to ``{self.end_disconnect_timeout}``!"
-                )
-            # Case: New disconnect timeout is the same as before
-            return await ctx.send(
-                f"⚠️ Already using disconnect timeout ``{self.end_disconnect_timeout}``!"
-            )
+        if self.curr_volume != volume:
+            # Case: New volume is not the same as before
+            self.curr_volume = volume
+            if ctx.voice_client.is_playing() or ctx.voice_client.is_paused():
+                # Case: Bot plays/pause a song
+                ctx.voice_client.source.volume = self.curr_volume / 100
+            return await ctx.send(f"✅ Changed volume to ``{self.curr_volume}``!")
+        # Case: New volume is the same as before
+        return await ctx.send(f"⚠️ Already using volume ``{self.curr_volume}``!")
 
     @staticmethod
     def help_information() -> discord.Embed | None:
@@ -647,8 +540,8 @@ class Music(commands.Cog):
             inline=False,
         )
         embed.add_field(
-            name="!set <key> <value1> ...",
-            value="Changes the configuration of the music player.",
+            name="!volume <volume>",
+            value="Changes the volume of the audio source.",
             inline=False,
         )
         return embed
