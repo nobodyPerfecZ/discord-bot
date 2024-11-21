@@ -9,7 +9,7 @@ import yaml
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from discord_bot.command import Help, Music
+from discord_bot.command import Help, Music, Manager
 
 # Load the environment variables
 load_dotenv()
@@ -19,6 +19,7 @@ async def main(client: commands.Bot, **kwargs):
     """Starting point of the bot."""
     async with client:
         await client.add_cog(Music(client, **kwargs["music"]))
+        await client.add_cog(Manager(client, **kwargs["manager"]))
         await client.start(token=os.environ["__DISCORD_API_KEY__"])
 
 

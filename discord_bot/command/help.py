@@ -25,4 +25,5 @@ class Help(commands.HelpCommand):
         for cog, _ in mapping.items():
             if cog is not None:
                 embed = cog.help_information()
-                await channel.send(embed=embed)
+                if embed is not None:
+                    await channel.send(embed=embed)

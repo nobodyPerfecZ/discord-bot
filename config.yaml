@@ -1,4 +1,8 @@
 music:
+  disconnect_timeout: 600
+  volume: 50
+
+manager:
   whitelisted_roles:
     - 832366646576414780
     - 542084251038908436
@@ -23,5 +27,3 @@ music:
     - 248901495058202634
     - 248901340309225472
     - 936729507937808414
-  disconnect_timeout: 600
-  volume: 50
