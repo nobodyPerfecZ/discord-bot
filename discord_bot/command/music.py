@@ -47,8 +47,7 @@ class Music(commands.Cog):
 
         self.bot = bot
 
-        # Initial/Current volume of the music player
-        self.start_volume = volume
+        # Current volume of the music player
         self.curr_volume = volume
 
         # End/Current disconnect timeout of the music player
@@ -183,9 +182,6 @@ class Music(commands.Cog):
             # Clear the playlist
             await self.playlist.clear()
 
-            # Set the volume to standard
-            self.curr_volume = self.start_volume
-
             # Reset the disconnect time
             self.curr_disconnect_timeout = 0
 
@@ -265,9 +261,6 @@ class Music(commands.Cog):
 
         # Clear the playlist
         await self.playlist.clear()
-
-        # Set the volume to standard
-        self.curr_volume = self.start_volume
 
         # Reset the disconnect time
         self.curr_disconnect_timeout = 0
@@ -503,9 +496,6 @@ class Music(commands.Cog):
 
         # Clear the playlist
         await self.playlist.clear()
-
-        # Set the volume to standard
-        self.curr_volume = self.start_volume
 
         # Reset the disconnect time
         self.curr_disconnect_timeout = 0
