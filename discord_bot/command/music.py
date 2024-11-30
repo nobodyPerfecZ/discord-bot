@@ -1,7 +1,5 @@
 """Music commands for the Discord bot."""
 
-# pylint: disable=W0212
-
 import asyncio
 import logging
 
@@ -10,8 +8,20 @@ import yt_dlp
 from discord.ext import commands
 
 from discord_bot.audio import AudioSource, Playlist
+from discord_bot.checks import (
+    check_author_voice_channel,
+    check_author_whitelisted,
+    check_bot_streaming,
+    check_bot_voice_channel,
+    check_public_text_channel,
+    check_same_voice_channel,
+    check_text_channel_whitelisted,
+    check_valid_url,
+    check_valid_volume,
+    check_voice_channel_whitelisted,
+)
 from discord_bot.transformer import YTDLVolumeTransformer
-from discord_bot.util.role import lowest_priority
+from discord_bot.util.role import lpriority
 
 logger = logging.getLogger("discord")
 
@@ -26,6 +36,9 @@ class Music(commands.Cog):
 
         volume (int):
             The starting volume with a value in between of 0 and 100
+
+        kwargs (dict[str, Any]):
+            Additional keyword arguments
     """
 
     def __init__(
@@ -38,80 +51,20 @@ class Music(commands.Cog):
             raise ValueError("volume needs to be in between of 0 and 100!")
 
         self.bot = bot
-
-        # Current volume of the music player
         self.curr_volume = volume
-
-        # Initial state of the music player
         self.playlist = Playlist()
-
-        # Flag to leave the voice channel
         self.should_leave = False
-
-    async def _check_text_in_guild(self, ctx: commands.Context):
-        """Raises an error if the text is written in a private text channel."""
-        if ctx.guild is None:
-            # Case: Message is written in a private text channel
-            await ctx.send("❌ Please use this command in a public text channel!")
-            raise commands.CommandError("Text is written in a private text channel!")
-
-    async def _check_author_in_voice_channel(self, ctx: commands.Context):
-        """Raises an error if the author is not in a voice channel."""
-        if ctx.author.voice is None:
-            # Case: Author is not in a voice channel
-            await ctx.send("❌ Please join a voice channel, before using this command!")
-            raise commands.CommandError("Author is not connected to a voice channel!")
-
-    async def _check_bot_in_voice_channel(self, ctx: commands.Context):
-        """Raises an error if the bot is not in a voice channel."""
-        if ctx.voice_client is None:
-            # Case: Bot is not in a voice channel
-            await ctx.send(
-                "❌ Please connect me to a voice channel, before using this command!"
-            )
-            raise commands.CommandError("Bot is not connected to a voice channel!")
-
-    async def _check_author_bot_in_same_voice_channel(self, ctx: commands.Context):
-        """Raises an error if the author and the bot are not in the same voice channel."""
-        if ctx.author.voice.channel != ctx.voice_client.channel:
-            # Case: Author and bot are not in the same voice channel
-            await ctx.send(
-                "❌ Please join to the same voice channel as me, before using this command!"
-            )
-            raise commands.CommandError(
-                "Author and Bot are not in the same voice channel!"
-            )
-
-    async def _check_bot_is_streaming(self, ctx: commands.Context):
-        """Raises an error if the bot is not streaming an audio."""
-        if not ctx.voice_client.is_playing() and not ctx.voice_client.is_paused():
-            # Case: Bot is not playing/pausing an audio stream
-            await ctx.send("❌ Please play a song, before using this command!")
-            raise commands.CommandError("Bot does not play/pause any song!")
-
-    async def _check_valid_url(self, ctx: commands.Context, url: str):
-        """Raises an error if the URL is not a valid YouTube URL."""
-        if not url.startswith("https://www.youtube.com"):
-            # Case: URL is not a valid YouTube URL
-            await ctx.send(f"❌ Please try a different URL than ``{url}``!")
-            raise commands.CommandError("URL is not a valid YouTube URL!")
-
-    async def _check_valid_volume(self, ctx: commands.Context, volume: int):
-        """Raises an error if the volume is not in between of 0 and 100."""
-        if volume < 0 or volume > 100:
-            # Case: Volume is not in between of 0 and 100
-            await ctx.send("❌ Please choose a volume between 0 and 100!")
-            raise commands.CommandError("Volume is not in between of 0 and 100!")
+        self.kwargs = kwargs
 
     async def _before_join(self, ctx: commands.Context):
         """Checks for the leave command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            manager._check_author_role_is_whitelisted(ctx),
-            manager._check_text_channel_is_whitelisted(ctx),
-            manager._check_voice_channel_is_whitelisted(ctx),
-            self._check_text_in_guild(ctx),
-            self._check_author_in_voice_channel(ctx),
+            check_author_whitelisted(ctx, manager.whitelisted_roles),
+            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
+            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
+            check_public_text_channel(ctx),
+            check_author_voice_channel(ctx),
         )
 
     @commands.command(aliases=["Join"])
@@ -151,13 +104,13 @@ class Music(commands.Cog):
         """Checks for the leave command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            manager._check_author_role_is_whitelisted(ctx),
-            manager._check_text_channel_is_whitelisted(ctx),
-            manager._check_voice_channel_is_whitelisted(ctx),
-            self._check_text_in_guild(ctx),
-            self._check_author_in_voice_channel(ctx),
-            self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice_channel(ctx),
+            check_author_whitelisted(ctx, manager.whitelisted_roles),
+            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
+            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
+            check_public_text_channel(ctx),
+            check_author_voice_channel(ctx),
+            check_bot_voice_channel(ctx),
+            check_same_voice_channel(ctx),
         )
 
     @commands.command(aliases=["Leave"])
@@ -192,14 +145,14 @@ class Music(commands.Cog):
         """Checks for the add command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            manager._check_author_role_is_whitelisted(ctx),
-            manager._check_text_channel_is_whitelisted(ctx),
-            manager._check_voice_channel_is_whitelisted(ctx),
-            self._check_text_in_guild(ctx),
-            self._check_author_in_voice_channel(ctx),
-            self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice_channel(ctx),
-            self._check_valid_url(ctx, url),
+            check_author_whitelisted(ctx, manager.whitelisted_roles),
+            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
+            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
+            check_public_text_channel(ctx),
+            check_author_voice_channel(ctx),
+            check_bot_voice_channel(ctx),
+            check_same_voice_channel(ctx),
+            check_valid_url(ctx, url),
         )
 
     @commands.command(aliases=["Add"])
@@ -217,7 +170,7 @@ class Music(commands.Cog):
         await self._before_add(ctx=ctx, url=url)
 
         # Get the lowest priority of the author's roles
-        priority = lowest_priority(ctx.author.roles)
+        priority = lpriority(ctx.author.roles)
 
         # Create the audio source
         audio_source = AudioSource(yt_url=url, priority=priority)
@@ -262,13 +215,13 @@ class Music(commands.Cog):
         """Checks for the play command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            manager._check_author_role_is_whitelisted(ctx),
-            manager._check_text_channel_is_whitelisted(ctx),
-            manager._check_voice_channel_is_whitelisted(ctx),
-            self._check_text_in_guild(ctx),
-            self._check_author_in_voice_channel(ctx),
-            self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice_channel(ctx),
+            check_author_whitelisted(ctx, manager.whitelisted_roles),
+            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
+            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
+            check_public_text_channel(ctx),
+            check_author_voice_channel(ctx),
+            check_bot_voice_channel(ctx),
+            check_same_voice_channel(ctx),
         )
 
     @commands.command(aliases=["Play"])
@@ -325,14 +278,14 @@ class Music(commands.Cog):
         """Checks for the pause command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            manager._check_author_role_is_whitelisted(ctx),
-            manager._check_text_channel_is_whitelisted(ctx),
-            manager._check_voice_channel_is_whitelisted(ctx),
-            self._check_text_in_guild(ctx),
-            self._check_author_in_voice_channel(ctx),
-            self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice_channel(ctx),
-            self._check_bot_is_streaming(ctx),
+            check_author_whitelisted(ctx, manager.whitelisted_roles),
+            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
+            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
+            check_public_text_channel(ctx),
+            check_author_voice_channel(ctx),
+            check_bot_voice_channel(ctx),
+            check_same_voice_channel(ctx),
+            check_bot_streaming(ctx),
         )
 
     @commands.command(aliases=["Pause"])
@@ -361,14 +314,14 @@ class Music(commands.Cog):
         """Checks for the skip command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            manager._check_author_role_is_whitelisted(ctx),
-            manager._check_text_channel_is_whitelisted(ctx),
-            manager._check_voice_channel_is_whitelisted(ctx),
-            self._check_text_in_guild(ctx),
-            self._check_author_in_voice_channel(ctx),
-            self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice_channel(ctx),
-            self._check_bot_is_streaming(ctx),
+            check_author_whitelisted(ctx, manager.whitelisted_roles),
+            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
+            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
+            check_public_text_channel(ctx),
+            check_author_voice_channel(ctx),
+            check_bot_voice_channel(ctx),
+            check_same_voice_channel(ctx),
+            check_bot_streaming(ctx),
         )
 
     @commands.command(aliases=["Skip"])
@@ -389,13 +342,13 @@ class Music(commands.Cog):
         """Checks for the reset command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            manager._check_author_role_is_whitelisted(ctx),
-            manager._check_text_channel_is_whitelisted(ctx),
-            manager._check_voice_channel_is_whitelisted(ctx),
-            self._check_text_in_guild(ctx),
-            self._check_author_in_voice_channel(ctx),
-            self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice_channel(ctx),
+            check_author_whitelisted(ctx, manager.whitelisted_roles),
+            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
+            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
+            check_public_text_channel(ctx),
+            check_author_voice_channel(ctx),
+            check_bot_voice_channel(ctx),
+            check_same_voice_channel(ctx),
         )
 
     @commands.command(aliases=["Reset"])
@@ -425,13 +378,13 @@ class Music(commands.Cog):
         """Checks for the show command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            manager._check_author_role_is_whitelisted(ctx),
-            manager._check_text_channel_is_whitelisted(ctx),
-            manager._check_voice_channel_is_whitelisted(ctx),
-            self._check_text_in_guild(ctx),
-            self._check_author_in_voice_channel(ctx),
-            self._check_bot_in_voice_channel(ctx),
-            self._check_author_bot_in_same_voice_channel(ctx),
+            check_author_whitelisted(ctx, manager.whitelisted_roles),
+            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
+            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
+            check_public_text_channel(ctx),
+            check_author_voice_channel(ctx),
+            check_bot_voice_channel(ctx),
+            check_same_voice_channel(ctx),
         )
 
     @commands.command(aliases=["Show"])
@@ -467,11 +420,11 @@ class Music(commands.Cog):
         """Checks for the volume command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            manager._check_author_role_is_whitelisted(ctx),
-            manager._check_text_channel_is_whitelisted(ctx),
-            manager._check_voice_channel_is_whitelisted(ctx),
-            self._check_text_in_guild(ctx),
-            self._check_valid_volume(ctx, volume),
+            check_author_whitelisted(ctx, manager.whitelisted_roles),
+            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
+            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
+            check_public_text_channel(ctx),
+            check_valid_volume(ctx, volume),
         )
 
     @commands.command(aliases=["Volume"])

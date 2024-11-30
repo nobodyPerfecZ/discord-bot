@@ -2,7 +2,6 @@
 
 from discord import TextChannel
 
-
 __TEXT_CHANNELS__ = {
     248897274002931722: "chat☕",
     725622500846993530: "music🎼",
@@ -38,22 +37,20 @@ def valid_text_channel_name(channel_names: list[str]) -> bool:
 
 
 def whitelisted_text_channel_id(
-    channel: TextChannel,
-    whitelisted_channel_ids: list[int],
+    channel: TextChannel, whitelisted_channel: list[int]
 ) -> bool:
     """Returns True if the channel is in the list of whitelisted channels."""
     return (
-        valid_text_channel_id(whitelisted_channel_ids)
-        and text_channel_id(channel) in whitelisted_channel_ids
+        valid_text_channel_id(whitelisted_channel)
+        and text_channel_id(channel) in whitelisted_channel
     )
 
 
 def whitelisted_text_channel_name(
-    channel: TextChannel,
-    whitelisted_channel_names: list[str],
+    channel: TextChannel, whitelisted_channel: list[str]
 ) -> bool:
     """Returns True if the channel is in the list of whitelisted channels."""
     return (
-        valid_text_channel_name(whitelisted_channel_names)
-        and text_channel_name(channel) in whitelisted_channel_names
+        valid_text_channel_name(whitelisted_channel)
+        and text_channel_name(channel) in whitelisted_channel
     )

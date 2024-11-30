@@ -2,7 +2,6 @@
 
 from discord import VoiceChannel
 
-
 __VOICE_CHANNELS__ = {
     248899126639591424: "Admin Raum💂",
     560510866056020008: "Moderator Raum👲",
@@ -44,22 +43,20 @@ def valid_voice_channel_name(channel_names: list[str]) -> bool:
 
 
 def whitelisted_voice_channel_id(
-    channel: VoiceChannel,
-    whitelisted_channel_ids: list[int],
+    channel: VoiceChannel, whitelisted_channel: list[int]
 ) -> bool:
     """Returns True if the channel is in the list of whitelisted channels."""
     return (
-        valid_voice_channel_id(whitelisted_channel_ids)
-        and voice_channel_id(channel) in whitelisted_channel_ids
+        valid_voice_channel_id(whitelisted_channel)
+        and voice_channel_id(channel) in whitelisted_channel
     )
 
 
 def whitelisted_voice_channel_name(
-    channel: VoiceChannel,
-    whitelisted_channel_names: list[str],
+    channel: VoiceChannel, whitelisted_channel: list[str]
 ) -> bool:
     """Returns True if the channel is in the list of whitelisted channels."""
     return (
-        valid_voice_channel_name(whitelisted_channel_names)
-        and voice_channel_name(channel) in whitelisted_channel_names
+        valid_voice_channel_name(whitelisted_channel)
+        and voice_channel_name(channel) in whitelisted_channel
     )

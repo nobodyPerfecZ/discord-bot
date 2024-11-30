@@ -1,12 +1,18 @@
 """Disconnect Background task for the Discord bot."""
 
-# pylint: disable=W0212
-
 import asyncio
 import logging
 
 import discord
 from discord.ext import commands, tasks
+
+from discord_bot.checks import (
+    check_author_whitelisted,
+    check_public_text_channel,
+    check_text_channel_whitelisted,
+    check_valid_timeout,
+    check_voice_channel_whitelisted,
+)
 
 logger = logging.getLogger("discord")
 
@@ -21,6 +27,9 @@ class Disconnect(commands.Cog):
 
         timeout (int):
             The time in seconds, where the bot leaves the server and resets its playlist
+
+        kwargs (dict[str, Any]):
+            Additional keyword arguments
     """
 
     def __init__(
@@ -32,20 +41,13 @@ class Disconnect(commands.Cog):
         if timeout < 0:
             raise ValueError("timeout needs to be higher than or equal to 0!")
 
+        self.kwargs = kwargs
         self.bot = bot
-
-        # End/Current timeout of the music player
         self.end_timeout = timeout
         self.curr_timeout = 0
 
+        # Start the background task
         self.disconnect.start()
-
-    async def _check_valid_timeout(self, ctx: commands.Context, timeout: int):
-        """Raises an error if the timeout is not higher than or equal to 0."""
-        if timeout < 0:
-            # Case: timeout is not higher than 0
-            await ctx.send("❌ Please choose a timeout higher than or equal to 0!")
-            raise commands.CommandError("timeout is not higher than or equal to 0!")
 
     @tasks.loop(seconds=60)
     async def disconnect(self):
@@ -81,13 +83,12 @@ class Disconnect(commands.Cog):
     ):
         """Checks for the timeout command before performing it."""
         manager = self.bot.get_cog("Manager")
-        music = self.bot.get_cog("Music")
         await asyncio.gather(
-            manager._check_author_role_is_whitelisted(ctx),
-            manager._check_text_channel_is_whitelisted(ctx),
-            manager._check_voice_channel_is_whitelisted(ctx),
-            music._check_text_in_guild(ctx),
-            self._check_valid_timeout(ctx, timeout),
+            check_author_whitelisted(ctx, manager.whitelisted_roles),
+            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
+            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
+            check_public_text_channel(ctx),
+            check_valid_timeout(ctx, timeout),
         )
 
     @commands.command(aliases=["Timeout"])
