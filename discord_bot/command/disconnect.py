@@ -3,7 +3,6 @@
 import asyncio
 import logging
 
-import discord
 from discord.ext import commands, tasks
 
 from discord_bot.checks import (
