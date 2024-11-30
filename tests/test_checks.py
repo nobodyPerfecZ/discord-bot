@@ -12,6 +12,7 @@ from discord_bot.checks import (
     check_bot_streaming,
     check_bot_voice_channel,
     check_less_equal_author,
+    check_non_empty_list,
     check_public_text_channel,
     check_same_voice_channel,
     check_text_channel_whitelisted,
@@ -326,6 +327,25 @@ async def test_check_voice_channel_whitelisted_with_valid_ctx():
     whitelisted_voice_channels = {"play": [248902220446302219, 248902352684318721]}
 
     await check_voice_channel_whitelisted(ctx, whitelisted_voice_channels)
+
+
+@pytest.mark.asyncio
+async def test_check_non_empty_list_with_invalid_list():
+    """Tests check_non_empty_list() function with invalid list."""
+    ctx = __CTX__
+    array = []
+
+    with pytest.raises(commands.CommandError):
+        await check_non_empty_list(ctx, array)
+
+
+@pytest.mark.asyncio
+async def test_check_non_empty_list_with_valid_list():
+    """Tests check_non_empty_list() function with valid list."""
+    ctx = __CTX__
+    array = [1, 2, 3]
+
+    await check_non_empty_list(ctx, array)
 
 
 @pytest.mark.asyncio

@@ -107,6 +107,14 @@ async def check_voice_channel_whitelisted(
         )
 
 
+async def check_non_empty_list(ctx: commands.Context, array: list):
+    """Raises an error if the list is empty."""
+    if not array:
+        # Case: List is empty
+        await ctx.send("❌ Please provide a non-empty list!")
+        raise commands.CommandError("The list is empty!")
+
+
 async def check_valid_url(ctx: commands.Context, url: str):
     """Raises an error if the URL is not a valid YouTube URL."""
     if not url.startswith("https://www.youtube.com"):

@@ -9,6 +9,7 @@ from discord.ext import commands
 from discord_bot.checks import (
     check_author_whitelisted,
     check_less_equal_author,
+    check_non_empty_list,
     check_text_channel_whitelisted,
     check_valid_command,
     check_valid_roles,
@@ -102,6 +103,7 @@ class Manager(commands.Cog):
                 self.whitelisted_text_channels,
                 self.whitelisted_voice_channels,
             ),
+            check_non_empty_list(ctx, roles),
             check_valid_roles(ctx, roles),
             check_less_equal_author(ctx, roles),
         )
@@ -147,6 +149,7 @@ class Manager(commands.Cog):
                 self.whitelisted_text_channels,
                 self.whitelisted_voice_channels,
             ),
+            check_non_empty_list(ctx, text_channels),
             check_valid_text_channels(ctx, text_channels),
         )
 
@@ -193,6 +196,7 @@ class Manager(commands.Cog):
                 self.whitelisted_text_channels,
                 self.whitelisted_voice_channels,
             ),
+            check_non_empty_list(ctx, voice_channels),
             check_valid_voice_channels(ctx, voice_channels),
         )
 
