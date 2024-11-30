@@ -112,8 +112,3 @@ class Disconnect(commands.Cog):
             return await ctx.send(f"✅ Changed timeout to ``{self.end_timeout}``!")
         # Case: New timeout is the same as before
         return await ctx.send(f"⚠️ Already using timeout ``{self.end_timeout}``!")
-
-    @staticmethod
-    def help_information() -> discord.Embed | None:
-        """Returns the help information of the manager commands."""
-        return None

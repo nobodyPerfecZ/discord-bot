@@ -227,8 +227,3 @@ class Manager(commands.Cog):
                 return await ctx.send("✅ Changed whitelisted voice channels!")
             # Case: Already using whitelisted voice channels
             return await ctx.send("⚠️ Already using whitelisted voice channels!")
-
-    @staticmethod
-    def help_information() -> discord.Embed | None:
-        """Returns the help information of the manager commands."""
-        return None
