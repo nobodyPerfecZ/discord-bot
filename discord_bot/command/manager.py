@@ -87,10 +87,8 @@ class Manager(commands.Cog):
         self._voice_channels_lock = asyncio.Lock()
         self.kwargs = kwargs
 
-    async def _before_whitelisted_roles(
-        self, ctx: commands.Context, command: str, roles: list[int]
-    ):
-        """Checks for the whitelisted_roles command before performing it."""
+    async def _before_role(self, ctx: commands.Context, command: str, roles: list[int]):
+        """Checks for the role command before performing it."""
         await asyncio.gather(
             check_author_whitelisted(ctx, self.whitelisted_roles),
             check_text_channel_whitelisted(ctx, self.whitelisted_text_channels),
@@ -108,7 +106,7 @@ class Manager(commands.Cog):
         )
 
     @commands.command(aliases=["Whitelisted_role"])
-    async def whitelisted_role(self, ctx: commands.Context, command: str, *roles):
+    async def role(self, ctx: commands.Context, command: str, *roles):
         """
         Sets the whitelisted roles for a specific command.
 
@@ -123,7 +121,7 @@ class Manager(commands.Cog):
                 The list of role ids to be whitelisted
         """
         roles = list(map(int, roles))
-        await self._before_whitelisted_roles(ctx, command, roles)
+        await self._before_role(ctx, command, roles)
 
         async with self._roles_lock:
             if self.whitelisted_roles[command] != roles:
@@ -133,10 +131,10 @@ class Manager(commands.Cog):
             # Case: Already using whitelisted roles
             return await ctx.send("⚠️ Already using whitelisted roles!")
 
-    async def _before_whitelisted_text_channels(
+    async def _before_text_channel(
         self, ctx: commands.Context, command: str, text_channels: list[int]
     ):
-        """Checks for the whitelisted_text_channels command before performing it."""
+        """Checks for the text_channel command before performing it."""
         await asyncio.gather(
             check_author_whitelisted(ctx, self.whitelisted_roles),
             check_text_channel_whitelisted(ctx, self.whitelisted_text_channels),
@@ -153,9 +151,7 @@ class Manager(commands.Cog):
         )
 
     @commands.command(aliases=["Whitelisted_text_channel"])
-    async def whitelisted_text_channel(
-        self, ctx: commands.Context, command: str, *text_channels
-    ):
+    async def text_channel(self, ctx: commands.Context, command: str, *text_channels):
         """
         Sets the whitelisted text channels for a specific command.
 
@@ -170,7 +166,7 @@ class Manager(commands.Cog):
                 The list of text channel ids to be whitelisted
         """
         text_channels = list(map(int, text_channels))
-        await self._before_whitelisted_text_channels(ctx, command, text_channels)
+        await self._before_text_channel(ctx, command, text_channels)
 
         async with self._text_channels_lock:
             if self.whitelisted_text_channels[command] != text_channels:
@@ -180,10 +176,10 @@ class Manager(commands.Cog):
             # Case: Already using whitelisted text channels
             return await ctx.send("⚠️ Already using whitelisted text channels!")
 
-    async def _before_whitelisted_voice_channels(
+    async def _before_voice_channel(
         self, ctx: commands.Context, command: str, voice_channels: list[int]
     ):
-        """Checks for the whitelisted_voice_channels command before performing it."""
+        """Checks for the voice_channels command before performing it."""
         await asyncio.gather(
             check_author_whitelisted(ctx, self.whitelisted_roles),
             check_text_channel_whitelisted(ctx, self.whitelisted_text_channels),
@@ -200,9 +196,7 @@ class Manager(commands.Cog):
         )
 
     @commands.command(aliases=["Whitelisted_voice_channel"])
-    async def whitelisted_voice_channel(
-        self, ctx: commands.Context, command: str, *voice_channels
-    ):
+    async def voice_channel(self, ctx: commands.Context, command: str, *voice_channels):
         """
         Sets the whitelisted voice channels for a specific command.
 
@@ -217,7 +211,7 @@ class Manager(commands.Cog):
                 The list of voice channel ids to be whitelisted
         """
         voice_channels = list(map(int, voice_channels))
-        await self._before_whitelisted_voice_channels(ctx, command, voice_channels)
+        await self._before_voice_channel(ctx, command, voice_channels)
 
         async with self._voice_channels_lock:
             if self.whitelisted_voice_channels[command] != voice_channels:
