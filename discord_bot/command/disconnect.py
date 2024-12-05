@@ -7,10 +7,8 @@ from discord.ext import commands, tasks
 
 from discord_bot.checks import (
     check_author_whitelisted,
-    check_public_text_channel,
     check_text_channel_whitelisted,
     check_valid_timeout,
-    check_voice_channel_whitelisted,
 )
 
 logger = logging.getLogger("discord")
@@ -75,23 +73,17 @@ class Disconnect(commands.Cog):
             # Disconnect the bot from the voice channel
             await self.bot.voice_clients[0].disconnect(force=False)
 
-    async def _before_timeout(
-        self,
-        ctx: commands.Context,
-        timeout: int,
-    ):
+    async def _before_timeout(self, ctx: commands.Context, timeout: int):
         """Checks for the timeout command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.whitelisted_roles),
-            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
-            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
-            check_public_text_channel(ctx),
+            check_author_whitelisted(ctx, manager.wroles),
+            check_text_channel_whitelisted(ctx, manager.wtext_channels),
             check_valid_timeout(ctx, timeout),
         )
 
     @commands.command(aliases=["Timeout"])
-    async def timeout(self, ctx: commands.Context, *, timeout: int):
+    async def timeout(self, ctx: commands.Context, timeout: int):
         """
         Set the timeout of the bot.
 

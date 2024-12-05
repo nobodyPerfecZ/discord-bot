@@ -13,15 +13,13 @@ from discord_bot.checks import (
     check_author_whitelisted,
     check_bot_streaming,
     check_bot_voice_channel,
-    check_public_text_channel,
     check_same_voice_channel,
     check_text_channel_whitelisted,
     check_valid_url,
     check_valid_volume,
-    check_voice_channel_whitelisted,
 )
 from discord_bot.transformer import YTDLVolumeTransformer
-from discord_bot.util.role import lpriority
+from discord_bot.util import lpriority
 
 logger = logging.getLogger("discord")
 
@@ -56,14 +54,49 @@ class Music(commands.Cog):
         self.should_leave = False
         self.kwargs = kwargs
 
+    async def _before_add(self, ctx: commands.Context, url: str):
+        """Checks for the add command before performing it."""
+        manager = self.bot.get_cog("Manager")
+        await asyncio.gather(
+            check_author_whitelisted(ctx, manager.wroles),
+            check_text_channel_whitelisted(ctx, manager.wtext_channels),
+            check_author_voice_channel(ctx),
+            check_bot_voice_channel(ctx),
+            check_same_voice_channel(ctx),
+            check_valid_url(ctx, url),
+        )
+
+    @commands.command(aliases=["Add"])
+    async def add(self, ctx: commands.Context, url: str):
+        """
+        Adds an audio source (YouTube URL) to the playlist.
+
+        Args:
+            ctx (commands.Context):
+                The discord context
+
+            url (str):
+                The URL of the YouTube video
+        """
+        await self._before_add(ctx, url)
+
+        # Get the lowest priority of the author's roles
+        priority = lpriority(ctx.author.roles)
+
+        # Create the audio source
+        audio_source = AudioSource(yt_url=url, priority=priority)
+
+        # Add the audio file to the playlist
+        await self.playlist.add(audio_source)
+
+        await ctx.send(f"✅ Added ``{audio_source.yt_url}`` to the playlist!")
+
     async def _before_join(self, ctx: commands.Context):
         """Checks for the leave command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.whitelisted_roles),
-            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
-            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
-            check_public_text_channel(ctx),
+            check_author_whitelisted(ctx, manager.wroles),
+            check_text_channel_whitelisted(ctx, manager.wtext_channels),
             check_author_voice_channel(ctx),
         )
 
@@ -76,7 +109,7 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
-        await self._before_join(ctx=ctx)
+        await self._before_join(ctx)
 
         author_channel = ctx.author.voice.channel
         if ctx.voice_client is None:
@@ -104,10 +137,8 @@ class Music(commands.Cog):
         """Checks for the leave command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.whitelisted_roles),
-            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
-            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
-            check_public_text_channel(ctx),
+            check_author_whitelisted(ctx, manager.wroles),
+            check_text_channel_whitelisted(ctx, manager.wtext_channels),
             check_author_voice_channel(ctx),
             check_bot_voice_channel(ctx),
             check_same_voice_channel(ctx),
@@ -122,7 +153,7 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
-        await self._before_leave(ctx=ctx)
+        await self._before_leave(ctx)
 
         # Safe the current voice channel
         voice_channel = ctx.voice_client.channel
@@ -141,44 +172,39 @@ class Music(commands.Cog):
 
         return await ctx.send(f"✅ Left ``{voice_channel}``!")
 
-    async def _before_add(self, ctx: commands.Context, *, url: str):
-        """Checks for the add command before performing it."""
+    async def _before_pause(self, ctx: commands.Context):
+        """Checks for the pause command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.whitelisted_roles),
-            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
-            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
-            check_public_text_channel(ctx),
+            check_author_whitelisted(ctx, manager.wroles),
+            check_text_channel_whitelisted(ctx, manager.wtext_channels),
             check_author_voice_channel(ctx),
             check_bot_voice_channel(ctx),
             check_same_voice_channel(ctx),
-            check_valid_url(ctx, url),
+            check_bot_streaming(ctx),
         )
 
-    @commands.command(aliases=["Add"])
-    async def add(self, ctx: commands.Context, *, url: str):
+    @commands.command(aliases=["Pause"])
+    async def pause(self, ctx: commands.Context):
         """
-        Adds an audio source (YouTube URL) to the playlist.
+        Pauses the currently played audio source.
 
         Args:
             ctx (commands.Context):
                 The discord context
-
-            url (str):
-                The URL of the YouTube video
         """
-        await self._before_add(ctx=ctx, url=url)
+        await self._before_pause(ctx)
 
-        # Get the lowest priority of the author's roles
-        priority = lpriority(ctx.author.roles)
+        if ctx.voice_client.is_playing():
+            # Case: Bot plays an audio source
+            ctx.voice_client.pause()
+            return await ctx.send(f"✅ Paused ``{ctx.voice_client.source.title}``!")
 
-        # Create the audio source
-        audio_source = AudioSource(yt_url=url, priority=priority)
-
-        # Add the audio file to the playlist
-        await self.playlist.add(audio_source)
-
-        await ctx.send(f"✅ Added ``{audio_source.yt_url}`` to the playlist!")
+        if ctx.voice_client.is_paused():
+            # Case: Bot is paused
+            return await ctx.send(
+                f"⚠️ Already paused ``{ctx.voice_client.source.title}``!"
+            )
 
     async def _play_next(self, ctx: commands.Context):
         """Plays the next song in the playlist."""
@@ -204,7 +230,7 @@ class Music(commands.Cog):
                     loop=self.bot.loop,
                 ),
             )
-            await ctx.send(f"✅ Next playing {player.title}!")
+            await ctx.send(f"✅ Next playing ``{player.title}``!")
         except yt_dlp.utils.YoutubeDLError:
             await ctx.send(
                 f"❌ Video ``{audio_source.yt_url}`` is unavailable, trying to play the next from the playlist!"
@@ -215,10 +241,8 @@ class Music(commands.Cog):
         """Checks for the play command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.whitelisted_roles),
-            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
-            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
-            check_public_text_channel(ctx),
+            check_author_whitelisted(ctx, manager.wroles),
+            check_text_channel_whitelisted(ctx, manager.wtext_channels),
             check_author_voice_channel(ctx),
             check_bot_voice_channel(ctx),
             check_same_voice_channel(ctx),
@@ -233,7 +257,7 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
-        await self._before_play(ctx=ctx)
+        await self._before_play(ctx)
 
         if ctx.voice_client.is_playing():
             # Case: Bot already plays music
@@ -274,78 +298,12 @@ class Music(commands.Cog):
             )
             return await self.play(ctx)
 
-    async def _before_pause(self, ctx: commands.Context):
-        """Checks for the pause command before performing it."""
-        manager = self.bot.get_cog("Manager")
-        await asyncio.gather(
-            check_author_whitelisted(ctx, manager.whitelisted_roles),
-            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
-            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
-            check_public_text_channel(ctx),
-            check_author_voice_channel(ctx),
-            check_bot_voice_channel(ctx),
-            check_same_voice_channel(ctx),
-            check_bot_streaming(ctx),
-        )
-
-    @commands.command(aliases=["Pause"])
-    async def pause(self, ctx: commands.Context):
-        """
-        Pauses the currently played audio source.
-
-        Args:
-            ctx (commands.Context):
-                The discord context
-        """
-        await self._before_pause(ctx=ctx)
-
-        if ctx.voice_client.is_playing():
-            # Case: Bot plays an audio source
-            ctx.voice_client.pause()
-            return await ctx.send(f"✅ Paused ``{ctx.voice_client.source.title}``!")
-
-        if ctx.voice_client.is_paused():
-            # Case: Bot is paused
-            return await ctx.send(
-                f"⚠️ Already paused ``{ctx.voice_client.source.title}``!"
-            )
-
-    async def _before_skip(self, ctx: commands.Context):
-        """Checks for the skip command before performing it."""
-        manager = self.bot.get_cog("Manager")
-        await asyncio.gather(
-            check_author_whitelisted(ctx, manager.whitelisted_roles),
-            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
-            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
-            check_public_text_channel(ctx),
-            check_author_voice_channel(ctx),
-            check_bot_voice_channel(ctx),
-            check_same_voice_channel(ctx),
-            check_bot_streaming(ctx),
-        )
-
-    @commands.command(aliases=["Skip"])
-    async def skip(self, ctx: commands.Context):
-        """
-        Skips the currently played audio source in the playlist.
-
-        Args:
-            ctx (commands.Context):
-                The discord context
-        """
-        await self._before_skip(ctx=ctx)
-
-        # Calls the after function (_play_next) of the couroutine
-        ctx.voice_client.stop()
-
     async def _before_reset(self, ctx: commands.Context):
         """Checks for the reset command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.whitelisted_roles),
-            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
-            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
-            check_public_text_channel(ctx),
+            check_author_whitelisted(ctx, manager.wroles),
+            check_text_channel_whitelisted(ctx, manager.wtext_channels),
             check_author_voice_channel(ctx),
             check_bot_voice_channel(ctx),
             check_same_voice_channel(ctx),
@@ -360,7 +318,7 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
-        await self._before_reset(ctx=ctx)
+        await self._before_reset(ctx)
 
         # Clear the playlist
         await self.playlist.clear()
@@ -378,10 +336,8 @@ class Music(commands.Cog):
         """Checks for the show command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.whitelisted_roles),
-            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
-            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
-            check_public_text_channel(ctx),
+            check_author_whitelisted(ctx, manager.wroles),
+            check_text_channel_whitelisted(ctx, manager.wtext_channels),
             check_author_voice_channel(ctx),
             check_bot_voice_channel(ctx),
             check_same_voice_channel(ctx),
@@ -396,7 +352,7 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
         """
-        await self._before_show(ctx=ctx)
+        await self._before_show(ctx)
 
         embed = discord.Embed(title="🎶 Playlist 🎶", color=discord.Color.blue())
 
@@ -416,19 +372,43 @@ class Music(commands.Cog):
 
         await ctx.send(embed=embed)
 
+    async def _before_skip(self, ctx: commands.Context):
+        """Checks for the skip command before performing it."""
+        manager = self.bot.get_cog("Manager")
+        await asyncio.gather(
+            check_author_whitelisted(ctx, manager.wroles),
+            check_text_channel_whitelisted(ctx, manager.wtext_channels),
+            check_author_voice_channel(ctx),
+            check_bot_voice_channel(ctx),
+            check_same_voice_channel(ctx),
+            check_bot_streaming(ctx),
+        )
+
+    @commands.command(aliases=["Skip"])
+    async def skip(self, ctx: commands.Context):
+        """
+        Skips the currently played audio source in the playlist.
+
+        Args:
+            ctx (commands.Context):
+                The discord context
+        """
+        await self._before_skip(ctx)
+
+        # Calls the after function (_play_next) of the couroutine
+        ctx.voice_client.stop()
+
     async def _before_volume(self, ctx: commands.Context, volume: int):
         """Checks for the volume command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.whitelisted_roles),
-            check_text_channel_whitelisted(ctx, manager.whitelisted_text_channels),
-            check_voice_channel_whitelisted(ctx, manager.whitelisted_voice_channels),
-            check_public_text_channel(ctx),
+            check_author_whitelisted(ctx, manager.wroles),
+            check_text_channel_whitelisted(ctx, manager.wtext_channels),
             check_valid_volume(ctx, volume),
         )
 
     @commands.command(aliases=["Volume"])
-    async def volume(self, ctx: commands.Context, *, volume: int):
+    async def volume(self, ctx: commands.Context, volume: int):
         """
         Set the volume of the bot.
 

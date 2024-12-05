@@ -5,13 +5,29 @@ from discord import TextChannel
 __TEXT_CHANNELS__ = {
     248897274002931722: "chat☕",
     725622500846993530: "music🎼",
-    684681937155260433: "challenges📰",
-    769280458688167966: "finanzen💰",
-    463446126776025088: "unistuff📎",
     725461496036982914: "invite📌",
     368795981124468745: "animerecommendation",
     899013316364632104: "bottest",
 }
+
+__TEXT_CHANNELS_PERMISSIONS__ = """
+                chat☕ music🎼 invite📌 animerecommendation bottest
+add              {}     {}     {}              {}           {}
+help             {}     {}     {}              {}           {}
+id               {}     {}     {}              {}           {}
+join             {}     {}     {}              {}           {}
+leave            {}     {}     {}              {}           {}
+pause            {}     {}     {}              {}           {}
+permission       {}     {}     {}              {}           {}
+play             {}     {}     {}              {}           {}
+reset            {}     {}     {}              {}           {}
+role             {}     {}     {}              {}           {}
+show             {}     {}     {}              {}           {}
+skip             {}     {}     {}              {}           {}
+text_channel     {}     {}     {}              {}           {}
+timeout          {}     {}     {}              {}           {}
+volume           {}     {}     {}              {}           {}
+"""
 
 
 def text_channel_id(channel: TextChannel) -> int:

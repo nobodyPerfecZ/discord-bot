@@ -9,9 +9,27 @@ __ROLES__ = {
     385159915918065664: ("Jonin", 2),
     686645319718404100: ("Chunin", 3),
     248898155867930624: ("Genin", 4),
-    560506852127801345: ("#Hafensänger#", 5),
-    248897274002931722: ("@everyone", 6),
+    248897274002931722: ("@everyone", 5),
 }
+
+__ROLES_PERMISSIONS__ = """
+                #ANBU# Kage Jonin Chunin Genin @everyone
+add               {}    {}   {}     {}    {}     {}    
+help              {}    {}   {}     {}    {}     {}    
+id                {}    {}   {}     {}    {}     {}    
+join              {}    {}   {}     {}    {}     {}    
+leave             {}    {}   {}     {}    {}     {}    
+pause             {}    {}   {}     {}    {}     {}    
+permission        {}    {}   {}     {}    {}     {}    
+play              {}    {}   {}     {}    {}     {}    
+reset             {}    {}   {}     {}    {}     {}    
+role              {}    {}   {}     {}    {}     {}    
+show              {}    {}   {}     {}    {}     {}    
+skip              {}    {}   {}     {}    {}     {}    
+text_channel      {}    {}   {}     {}    {}     {}    
+timeout           {}    {}   {}     {}    {}     {}    
+volume            {}    {}   {}     {}    {}     {}    
+"""
 
 
 __DEFAULT_ROLE__ = (None, max(priority for _, priority in __ROLES__.values()) + 1)
@@ -40,18 +58,18 @@ def valid_role_name(role_names: list[str]) -> bool:
 
 def whitelisted_role_id(
     roles: list[Role],
-    whitelisted_roles: list[int],
+    wroles: list[int],
 ) -> bool:
     """Returns True if the role is in the list of whitelisted roles."""
-    return any(role in whitelisted_roles for role in role_id(roles))
+    return any(role in wroles for role in role_id(roles))
 
 
 def whitelisted_role_name(
     roles: list[Role],
-    whitelisted_roles: list[str],
+    wroles: list[str],
 ) -> bool:
     """Returns True if the role is in the list of whitelisted roles."""
-    return any(role in whitelisted_roles for role in role_name(roles))
+    return any(role in wroles for role in role_name(roles))
 
 
 def greater_equal_role_id(roles: list[Role], role_ids: list[int]) -> bool:

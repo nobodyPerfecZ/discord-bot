@@ -13,7 +13,6 @@ from discord_bot.checks import (
     check_bot_voice_channel,
     check_less_equal_author,
     check_non_empty_list,
-    check_public_text_channel,
     check_same_voice_channel,
     check_text_channel_whitelisted,
     check_valid_command,
@@ -21,9 +20,7 @@ from discord_bot.checks import (
     check_valid_text_channels,
     check_valid_timeout,
     check_valid_url,
-    check_valid_voice_channels,
     check_valid_volume,
-    check_voice_channel_whitelisted,
 )
 
 
@@ -138,23 +135,6 @@ __CTX__ = ContextMock(
 
 
 @pytest.mark.asyncio
-async def test_check_public_text_channel_with_invalid_ctx():
-    """Tests check_public_text_channel() function with invalid ctx."""
-    ctx = replace(__CTX__, guild=None)
-
-    with pytest.raises(commands.CommandError):
-        await check_public_text_channel(ctx)
-
-
-@pytest.mark.asyncio
-async def test_check_public_text_channel_with_valid_ctx():
-    """Tests check_public_text_channel() function with valid ctx."""
-    ctx = __CTX__
-
-    await check_public_text_channel(ctx)
-
-
-@pytest.mark.asyncio
 async def test_check_author_voice_channel_with_invalid_ctx():
     """Tests check_author_voice_channel() function with invalid ctx."""
     ctx = replace(__CTX__, author=replace(__CTX__.author, voice=None))
@@ -259,19 +239,19 @@ async def test_check_author_whitelisted_with_invalid_ctx():
             __CTX__.author, roles=[RoleMock(id=385159915918065664, name="Jonin")]
         ),
     )
-    whitelisted_roles = {"play": [542084251038908436, 248898634924425216]}
+    wroles = {"play": [542084251038908436, 248898634924425216]}
 
     with pytest.raises(commands.CommandError):
-        await check_author_whitelisted(ctx, whitelisted_roles)
+        await check_author_whitelisted(ctx, wroles)
 
 
 @pytest.mark.asyncio
 async def test_check_author_whitelisted_with_valid_ctx():
     """Tests check_author_whitelisted() function with valid ctx."""
     ctx = __CTX__
-    whitelisted_roles = {"play": [542084251038908436, 248898634924425216]}
+    wroles = {"play": [542084251038908436, 248898634924425216]}
 
-    await check_author_whitelisted(ctx, whitelisted_roles)
+    await check_author_whitelisted(ctx, wroles)
 
 
 @pytest.mark.asyncio
@@ -280,53 +260,19 @@ async def test_check_text_channel_whitelisted_with_invalid_ctx():
     ctx = replace(
         __CTX__, channel=TextChannelMock(id=684681937155260433, name="challenges📰")
     )
-    whitelisted_text_channels = {"play": [248897274002931722, 725622500846993530]}
+    wtext_channels = {"play": [248897274002931722, 725622500846993530]}
 
     with pytest.raises(commands.CommandError):
-        await check_text_channel_whitelisted(ctx, whitelisted_text_channels)
+        await check_text_channel_whitelisted(ctx, wtext_channels)
 
 
 @pytest.mark.asyncio
 async def test_check_text_channel_whitelisted_with_valid_ctx():
     """Tests check_text_channel_whitelisted() function with valid ctx."""
     ctx = __CTX__
-    whitelisted_text_channels = {"play": [248897274002931722, 725622500846993530]}
+    wtext_channels = {"play": [248897274002931722, 725622500846993530]}
 
-    await check_text_channel_whitelisted(ctx, whitelisted_text_channels)
-
-
-@pytest.mark.asyncio
-async def test_check_voice_channel_whitelisted_with_invalid_ctx():
-    """Tests check_voice_channel_whitelisted() function with invalid ctx."""
-    ctx = replace(
-        __CTX__,
-        author=replace(
-            __CTX__.author,
-            voice=replace(
-                __CTX__.author.voice,
-                channel=VoiceChannelMock(
-                    id=248901495058202634, name="Programming Ecke💻"
-                ),
-            ),
-        ),
-        voice_client=replace(
-            __CTX__.voice_client,
-            channel=VoiceChannelMock(id=248901495058202634, name="Programming Ecke💻"),
-        ),
-    )
-    whitelisted_voice_channels = {"play": [248902220446302219, 248902352684318721]}
-
-    with pytest.raises(commands.CommandError):
-        await check_voice_channel_whitelisted(ctx, whitelisted_voice_channels)
-
-
-@pytest.mark.asyncio
-async def test_check_voice_channel_whitelisted_with_valid_ctx():
-    """Tests check_voice_channel_whitelisted() function with valid ctx."""
-    ctx = __CTX__
-    whitelisted_voice_channels = {"play": [248902220446302219, 248902352684318721]}
-
-    await check_voice_channel_whitelisted(ctx, whitelisted_voice_channels)
+    await check_text_channel_whitelisted(ctx, wtext_channels)
 
 
 @pytest.mark.asyncio
@@ -409,37 +355,21 @@ async def test_check_valid_timeout_with_valid_timeout():
 async def test_check_valid_command_with_invalid_command():
     """Tests check_valid_command() function with invalid command."""
     ctx = __CTX__
-    command = "skip"
-    whitelisted_roles = {"play": [542084251038908436, 248898634924425216]}
-    whitelisted_text_channels = {"play": [248897274002931722, 725622500846993530]}
-    whitelisted_voice_channels = {"play": [248899126639591424, 560510866056020008]}
+    cmd = "skip"
+    cmds = ["play"]
 
     with pytest.raises(commands.CommandError):
-        await check_valid_command(
-            ctx,
-            command,
-            whitelisted_roles,
-            whitelisted_text_channels,
-            whitelisted_voice_channels,
-        )
+        await check_valid_command(ctx, cmd, cmds)
 
 
 @pytest.mark.asyncio
 async def test_check_valid_command_with_valid_command():
     """Tests check_valid_command() function with valid command."""
     ctx = __CTX__
-    command = "play"
-    whitelisted_roles = {"play": [542084251038908436, 248898634924425216]}
-    whitelisted_text_channels = {"play": [248897274002931722, 725622500846993530]}
-    whitelisted_voice_channels = {"play": [248899126639591424, 560510866056020008]}
+    cmd = "play"
+    cmds = ["play"]
 
-    await check_valid_command(
-        ctx,
-        command,
-        whitelisted_roles,
-        whitelisted_text_channels,
-        whitelisted_voice_channels,
-    )
+    await check_valid_command(ctx, cmd, cmds)
 
 
 @pytest.mark.asyncio
@@ -478,25 +408,6 @@ async def test_check_valid_text_channels_with_valid_text_channels():
     text_channels = [248897274002931722, 725622500846993530]
 
     await check_valid_text_channels(ctx, text_channels)
-
-
-@pytest.mark.asyncio
-async def test_check_valid_voice_channels_with_invalid_voice_channels():
-    """Tests check_valid_voice_channels() function with invalid voice channels."""
-    ctx = __CTX__
-    voice_channels = [248899126639591424, 560510866056020123]
-
-    with pytest.raises(commands.CommandError):
-        await check_valid_voice_channels(ctx, voice_channels)
-
-
-@pytest.mark.asyncio
-async def test_check_valid_voice_channels_with_valid_voice_channels():
-    """Tests check_valid_voice_channels() function with valid voice channels."""
-    ctx = __CTX__
-    voice_channels = [248899126639591424, 560510866056020008]
-
-    await check_valid_voice_channels(ctx, voice_channels)
 
 
 @pytest.mark.asyncio

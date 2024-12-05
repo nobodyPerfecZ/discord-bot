@@ -2,23 +2,13 @@
 
 from discord.ext import commands
 
-from discord_bot.util.role import less_equal_role_id, valid_role_id, whitelisted_role_id
-from discord_bot.util.text_channel import (
+from discord_bot.util import (
+    less_equal_role_id,
+    valid_role_id,
+    whitelisted_role_id,
     valid_text_channel_id,
     whitelisted_text_channel_id,
 )
-from discord_bot.util.voice_channel import (
-    valid_voice_channel_id,
-    whitelisted_voice_channel_id,
-)
-
-
-async def check_public_text_channel(ctx: commands.Context):
-    """Raises an error if the text is written in a private text channel."""
-    if ctx.guild is None:
-        # Case: Message is written in a private text channel
-        await ctx.send("❌ Please use this command in a public text channel!")
-        raise commands.CommandError("Text is written in a private text channel!")
 
 
 async def check_author_voice_channel(ctx: commands.Context):
@@ -69,41 +59,23 @@ async def check_author_admin(ctx: commands.Context):
         )
 
 
-async def check_author_whitelisted(
-    ctx: commands.Context, whitelisted_roles: dict[str, list[int]]
-):
+async def check_author_whitelisted(ctx: commands.Context, wroles: dict[str, list[int]]):
     """Raises an error if the author is not whitelisted."""
-    if not whitelisted_role_id(ctx.author.roles, whitelisted_roles[ctx.command.name]):
+    if not whitelisted_role_id(ctx.author.roles, wroles[ctx.command.name]):
         # Case: Author is not whitelisted
         await ctx.send("❌ You do not have the required role to use this command!")
         raise commands.CommandError("The role of the author is not whitelisted!")
 
 
 async def check_text_channel_whitelisted(
-    ctx: commands.Context, whitelisted_text_channels: dict[str, list[int]]
+    ctx: commands.Context, wtext_channels: dict[str, list[int]]
 ):
     """Raises an error if the text channel is not whitelisted."""
-    if not whitelisted_text_channel_id(
-        ctx.channel, whitelisted_text_channels[ctx.command.name]
-    ):
+    if not whitelisted_text_channel_id(ctx.channel, wtext_channels[ctx.command.name]):
         # Case: Command is not executed in the required text channel
         await ctx.send("❌ Please use this command in the required text channel!")
         raise commands.CommandError(
             "The text channel of the command is not whitelisted!"
-        )
-
-
-async def check_voice_channel_whitelisted(
-    ctx: commands.Context, whitelisted_voice_channels: dict[str, list[int]]
-):
-    """Raises an error if the voice channel is not whitelisted."""
-    if not whitelisted_voice_channel_id(
-        ctx.author.voice.channel, whitelisted_voice_channels[ctx.command.name]
-    ):
-        # Case: Command is not executed in the required text channel
-        await ctx.send("❌ Please use this command in the required voice channel!")
-        raise commands.CommandError(
-            "The voice channel of the author is not whitelisted!"
         )
 
 
@@ -139,19 +111,9 @@ async def check_valid_timeout(ctx: commands.Context, timeout: int):
         raise commands.CommandError("timeout is not higher than or equal to 0!")
 
 
-async def check_valid_command(
-    ctx: commands.Context,
-    command: str,
-    whitelisted_roles: dict[str, list[int]],
-    whitelisted_text_channels: dict[str, list[int]],
-    whitelisted_voice_channels: dict[str, list[int]],
-):
+async def check_valid_command(ctx: commands.Context, cmd: str, cmds: list[str]):
     """Raises an error if the command is not valid."""
-    if (
-        command not in whitelisted_roles
-        or command not in whitelisted_text_channels
-        or command not in whitelisted_voice_channels
-    ):
+    if cmd not in cmds:
         # Case: Command is not valid
         await ctx.send("❌ Please provide a valid command!")
         raise commands.CommandError("The command is not valid!")
@@ -171,14 +133,6 @@ async def check_valid_text_channels(ctx: commands.Context, text_channels: list[i
         # Case: Text channel ids are not valid
         await ctx.send("❌ Please provide valid text channel ids!")
         raise commands.CommandError("The text channel ids are not valid!")
-
-
-async def check_valid_voice_channels(ctx: commands.Context, voice_channels: list[int]):
-    """Raises an error if the voice channels are not valid."""
-    if not valid_voice_channel_id(voice_channels):
-        # Case: Voice channel ids are not valid
-        await ctx.send("❌ Please provide valid voice channel ids!")
-        raise commands.CommandError("The voice channel ids are not valid!")
 
 
 async def check_less_equal_author(ctx: commands.Context, roles: list[int]):

@@ -9,7 +9,7 @@ import yaml
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from discord_bot.command import Disconnect, Help, Manager, Music
+from discord_bot.command import Disconnect, Manager, Music
 
 # Load the environment variables
 load_dotenv()
@@ -33,13 +33,13 @@ if __name__ == "__main__":
     intents = discord.Intents.all()
 
     # Create the help command
-    help_command = Help()
+    # help_command = Help()
 
     # Create the bot
     bot = commands.Bot(
         command_prefix="!",
         intents=intents,
-        help_command=help_command,
+        help_command=None,
     )
 
     # Create the configuration

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from discord_bot.util.role import (
+from discord_bot.util import (
     gpriority,
     greater_equal_role_id,
     greater_role_id,
@@ -27,21 +27,21 @@ class RoleMock:
 
     id: int
     name: str
+    priority: int
 
 
-__ANBU__ = RoleMock(542084251038908436, "#ANBU#")
-__KAGE__ = RoleMock(248898634924425216, "Kage")
-__JONIN__ = RoleMock(385159915918065664, "Jonin")
-__CHUNIN__ = RoleMock(686645319718404100, "Chunin")
-__GENIN__ = RoleMock(248898155867930624, "Genin")
-__HAFENSAENGER__ = RoleMock(560506852127801345, "#Hafensänger#")
-__EVERYONE__ = RoleMock(248897274002931722, "@everyone")
+__ANBU__ = RoleMock(542084251038908436, "#ANBU#", 0)
+__KAGE__ = RoleMock(248898634924425216, "Kage", 1)
+__JONIN__ = RoleMock(385159915918065664, "Jonin", 2)
+__CHUNIN__ = RoleMock(686645319718404100, "Chunin", 3)
+__GENIN__ = RoleMock(248898155867930624, "Genin", 4)
+__EVERYONE__ = RoleMock(248897274002931722, "@everyone", 5)
 
 
 @pytest.mark.parametrize(
     argnames=["roles", "expected"],
     argvalues=[
-        ([__ANBU__], [542084251038908436]),
+        ([__ANBU__], [__ANBU__.id]),
     ],
 )
 def test_role_id(roles, expected):
@@ -52,7 +52,7 @@ def test_role_id(roles, expected):
 @pytest.mark.parametrize(
     argnames=["roles", "expected"],
     argvalues=[
-        ([__ANBU__], ["#ANBU#"]),
+        ([__ANBU__], [__ANBU__.name]),
     ],
 )
 def test_role_name(roles, expected):
@@ -63,8 +63,8 @@ def test_role_name(roles, expected):
 @pytest.mark.parametrize(
     argnames=["role_ids", "expected"],
     argvalues=[
-        ([542084251038908436, 542084251038908436], True),
-        ([542084251038908436, 832366646576414782], False),
+        ([__ANBU__.id, __KAGE__.id], True),
+        ([__ANBU__.id, 832366646576414782], False),
     ],
 )
 def test_valid_role_id(role_ids, expected):
@@ -75,8 +75,8 @@ def test_valid_role_id(role_ids, expected):
 @pytest.mark.parametrize(
     argnames=["role_names", "expected"],
     argvalues=[
-        (["#ANBU#", "Kage"], True),
-        (["#ANBU#", "#ANBU123#"], False),
+        ([__ANBU__.name, __KAGE__.name], True),
+        ([__ANBU__.name, "#ANBU123#"], False),
     ],
 )
 def test_valid_role_name(role_names, expected):
@@ -85,50 +85,50 @@ def test_valid_role_name(role_names, expected):
 
 
 @pytest.mark.parametrize(
-    argnames=["roles", "whitelisted_roles", "expected"],
+    argnames=["roles", "wroles", "expected"],
     argvalues=[
         (
             [__ANBU__],
-            [542084251038908436, 248898634924425216],
+            [__ANBU__.id, __KAGE__.id],
             True,
         ),
         (
             [__JONIN__],
-            [542084251038908436, 248898634924425216],
+            [__ANBU__.id, __KAGE__.id],
             False,
         ),
     ],
 )
-def test_whitelisted_role_id(roles, whitelisted_roles, expected):
+def test_whitelisted_role_id(roles, wroles, expected):
     """Tests the whitelisted_role_id() method."""
-    assert whitelisted_role_id(roles, whitelisted_roles) == expected
+    assert whitelisted_role_id(roles, wroles) == expected
 
 
 @pytest.mark.parametrize(
-    argnames=["roles", "whitelisted_roles", "expected"],
+    argnames=["roles", "wroles", "expected"],
     argvalues=[
         (
             [__ANBU__],
-            ["#ANBU#", "Kage"],
+            [__ANBU__.name, __KAGE__.name],
             True,
         ),
         (
             [__JONIN__],
-            ["#ANBU#", "Kage"],
+            [__ANBU__.name, __KAGE__.name],
             False,
         ),
     ],
 )
-def test_whitelisted_role_name(roles, whitelisted_roles, expected):
+def test_whitelisted_role_name(roles, wroles, expected):
     """Tests the whitelisted_role_name() method."""
-    assert whitelisted_role_name(roles, whitelisted_roles) == expected
+    assert whitelisted_role_name(roles, wroles) == expected
 
 
 @pytest.mark.parametrize(
     argnames=["roles", "role_ids", "expected"],
     argvalues=[
-        ([__KAGE__], [542084251038908436, 248898634924425216], True),
-        ([__ANBU__], [542084251038908436, 248898634924425216], False),
+        ([__KAGE__], [__ANBU__.id, __KAGE__.id], True),
+        ([__ANBU__], [__ANBU__.id, __KAGE__.id], False),
     ],
 )
 def test_greater_equal_role_id(roles, role_ids, expected):
@@ -139,8 +139,8 @@ def test_greater_equal_role_id(roles, role_ids, expected):
 @pytest.mark.parametrize(
     argnames=["roles", "role_ids", "expected"],
     argvalues=[
-        ([__JONIN__], [542084251038908436, 248898634924425216], True),
-        ([__KAGE__], [542084251038908436, 248898634924425216], False),
+        ([__JONIN__], [__ANBU__.id, __KAGE__.id], True),
+        ([__KAGE__], [__ANBU__.id, __KAGE__.id], False),
     ],
 )
 def test_greater_role_id(roles, role_ids, expected):
@@ -151,8 +151,8 @@ def test_greater_role_id(roles, role_ids, expected):
 @pytest.mark.parametrize(
     argnames=["roles", "role_ids", "expected"],
     argvalues=[
-        ([__KAGE__], [248898634924425216, 385159915918065664], True),
-        ([__JONIN__], [248898634924425216, 385159915918065664], False),
+        ([__KAGE__], [__KAGE__.id, __JONIN__.id], True),
+        ([__JONIN__], [__KAGE__.id, __JONIN__.id], False),
     ],
 )
 def test_less_equal_role_id(roles, role_ids, expected):
@@ -163,8 +163,8 @@ def test_less_equal_role_id(roles, role_ids, expected):
 @pytest.mark.parametrize(
     argnames=["roles", "role_ids", "expected"],
     argvalues=[
-        ([__ANBU__], [248898634924425216, 385159915918065664], True),
-        ([__KAGE__], [248898634924425216, 385159915918065664], False),
+        ([__ANBU__], [__KAGE__.id, __JONIN__.id], True),
+        ([__KAGE__], [__KAGE__.id, __JONIN__.id], False),
     ],
 )
 def test_less_role_id(roles, role_ids, expected):
@@ -182,10 +182,16 @@ def test_less_role_id(roles, role_ids, expected):
                 __JONIN__,
                 __CHUNIN__,
                 __GENIN__,
-                __HAFENSAENGER__,
                 __EVERYONE__,
             ],
-            [0, 1, 2, 3, 4, 5, 6],
+            [
+                __ANBU__.priority,
+                __KAGE__.priority,
+                __JONIN__.priority,
+                __CHUNIN__.priority,
+                __GENIN__.priority,
+                __EVERYONE__.priority,
+            ],
         ),
     ],
 )
@@ -204,10 +210,9 @@ def test_priority(roles, expected):
                 __JONIN__,
                 __CHUNIN__,
                 __GENIN__,
-                __HAFENSAENGER__,
                 __EVERYONE__,
             ],
-            0,
+            __ANBU__.priority,
         ),
     ],
 )
@@ -226,10 +231,9 @@ def test_lpriority(roles, expected):
                 __JONIN__,
                 __CHUNIN__,
                 __GENIN__,
-                __HAFENSAENGER__,
                 __EVERYONE__,
             ],
-            6,
+            __EVERYONE__.priority,
         ),
     ],
 )
