@@ -88,63 +88,15 @@ class Manager(commands.Cog):
         await self._before_help(ctx)
 
         embed = discord.Embed(title="List of commands:", color=discord.Color.blue())
-        embed.add_field(
-            name="!join", value="Joins the voice channel of the author.", inline=False
-        )
-        embed.add_field(name="!leave", value="Leaves the voice channel.", inline=False)
+
         embed.add_field(
             name="!add <url>",
             value="Adds an audio source (YouTube URL) to the playlist.",
             inline=False,
         )
         embed.add_field(
-            name="!play",
-            value="Starts playing the audio source from the playlist.",
-            inline=False,
-        )
-        embed.add_field(
-            name="!pause",
-            value="Pauses the currently played audio source.",
-            inline=False,
-        )
-        embed.add_field(
-            name="!skip",
-            value="Skips the currently played audio source in the playlist.",
-            inline=False,
-        )
-        embed.add_field(
-            name="!reset",
-            value="Stops the currently played audio source and clears the playlist.",
-            inline=False,
-        )
-        embed.add_field(
-            name="!show",
-            value="Shows the audio sources from the playlist.",
-            inline=False,
-        )
-        embed.add_field(
-            name="!volume <volume>",
-            value="Changes the volume of the audio source.",
-            inline=False,
-        )
-        embed.add_field(
-            name="!timeout <timeout>",
-            value="Changes the timeout of the bot.",
-            inline=False,
-        )
-        embed.add_field(
-            name="!role <command> <role_id1> <role_id2> ...",
-            value="Whitelist the specified roles for the command.",
-            inline=False,
-        )
-        embed.add_field(
-            name="!text_channel <command> <text_channel_id1> <text_channel_id2> ...",
-            value="Whitelist the specified text channels for the command.",
-            inline=False,
-        )
-        embed.add_field(
-            name="!permission <type>",
-            value="Shows which roles or text channels can use each command.",
+            name="!help",
+            value="Shows the list of commands.",
             inline=False,
         )
         embed.add_field(
@@ -153,8 +105,57 @@ class Manager(commands.Cog):
             inline=False,
         )
         embed.add_field(
-            name="!help",
-            value="Shows the list of commands.",
+            name="!join", value="Joins the voice channel of the author.", inline=False
+        )
+        embed.add_field(name="!leave", value="Leaves the voice channel.", inline=False)
+        embed.add_field(
+            name="!pause",
+            value="Pauses the currently played audio source.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!permission <type>",
+            value="Shows which roles or text channels can use each command.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!play",
+            value="Starts playing the audio source from the playlist.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!reset",
+            value="Stops the currently played audio source and clears the playlist.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!role <command> <role_id1> ... <role_idN>",
+            value="Whitelist the specified roles for the command.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!show",
+            value="Shows the audio sources from the playlist.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!skip",
+            value="Skips the currently played audio source in the playlist.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!text_channel <command> <text_channel_id1> ... <text_channel_idN>",
+            value="Whitelist the specified text channels for the command.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!timeout <timeout>",
+            value="Changes the timeout of the bot.",
+            inline=False,
+        )
+        embed.add_field(
+            name="!volume <volume>",
+            value="Changes the volume of the audio source.",
             inline=False,
         )
 
