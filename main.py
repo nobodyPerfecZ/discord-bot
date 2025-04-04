@@ -1,18 +1,14 @@
 """Starting point of the bot."""
 
 import asyncio
-import logging.handlers
+import logging
 import os
 
 import discord
 import yaml
 from discord.ext import commands
-from dotenv import load_dotenv
 
 from discord_bot.command import Disconnect, Manager, Music
-
-# Load the environment variables
-load_dotenv()
 
 
 async def main(client: commands.Bot, **kwargs):
@@ -21,23 +17,19 @@ async def main(client: commands.Bot, **kwargs):
         await client.add_cog(Music(client, **kwargs["music"]))
         await client.add_cog(Manager(client, **kwargs["manager"]))
         await client.add_cog(Disconnect(client, **kwargs["disconnect"]))
-        await client.start(token=os.environ["__DISCORD_API_KEY__"])
+        await client.start(token=os.environ["TOKEN"])
 
 
 if __name__ == "__main__":
     # Enable logging of the bot
-    # level=logging.DEBUG for debugging
     discord.utils.setup_logging(level=logging.WARNING)
 
     # Get all intents
     intents = discord.Intents.all()
 
-    # Create the help command
-    # help_command = Help()
-
     # Create the bot
     bot = commands.Bot(
-        command_prefix="!",
+        command_prefix=os.environ["COMMAND_PREFIX"],
         intents=intents,
         help_command=None,
     )

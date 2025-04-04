@@ -1,14 +1,7 @@
 """Checks for the discord bot."""
 
+from typing import Dict, List
 from discord.ext import commands
-
-from discord_bot.util import (
-    less_equal_role_id,
-    valid_role_id,
-    whitelisted_role_id,
-    valid_text_channel_id,
-    whitelisted_text_channel_id,
-)
 
 
 async def check_author_voice_channel(ctx: commands.Context):
@@ -52,26 +45,33 @@ async def check_author_admin(ctx: commands.Context):
     if not ctx.author.guild_permissions.administrator:
         # Case: Author is not an admin
         await ctx.send(
-            "❌ You do not have the required Administrator permissions to use this command!"
+            "❌ You do not have Administrator permissions to use this command!"
         )
-        raise commands.CommandError(
-            "Author does not have the required administrator permission!"
-        )
+        raise commands.CommandError("Author does not have administrator permission!")
 
 
-async def check_author_whitelisted(ctx: commands.Context, wroles: dict[str, list[int]]):
+async def check_author_whitelisted(ctx: commands.Context, wroles: Dict[str, List[int]]):
     """Raises an error if the author is not whitelisted."""
-    if not whitelisted_role_id(ctx.author.roles, wroles[ctx.command.name]):
+    __ROLES__ = {
+        role.id: (priority, role)
+        for priority, role in enumerate(reversed(ctx.author.roles))
+    }
+    whitelisted = any(role_id in __ROLES__ for role_id in wroles[ctx.command.name])
+    if not whitelisted:
         # Case: Author is not whitelisted
         await ctx.send("❌ You do not have the required role to use this command!")
         raise commands.CommandError("The role of the author is not whitelisted!")
 
 
 async def check_text_channel_whitelisted(
-    ctx: commands.Context, wtext_channels: dict[str, list[int]]
+    ctx: commands.Context, wtext_channels: Dict[str, List[int]]
 ):
     """Raises an error if the text channel is not whitelisted."""
-    if not whitelisted_text_channel_id(ctx.channel, wtext_channels[ctx.command.name]):
+    whitelisted = any(
+        text_channel_id == ctx.channel.id
+        for text_channel_id in wtext_channels[ctx.command.name]
+    )
+    if not whitelisted:
         # Case: Command is not executed in the required text channel
         await ctx.send("❌ Please use this command in the required text channel!")
         raise commands.CommandError(
@@ -111,7 +111,7 @@ async def check_valid_timeout(ctx: commands.Context, timeout: int):
         raise commands.CommandError("timeout is not higher than or equal to 0!")
 
 
-async def check_valid_command(ctx: commands.Context, cmd: str, cmds: list[str]):
+async def check_valid_command(ctx: commands.Context, cmd: str, cmds: List[str]):
     """Raises an error if the command is not valid."""
     if cmd not in cmds:
         # Case: Command is not valid
@@ -119,25 +119,45 @@ async def check_valid_command(ctx: commands.Context, cmd: str, cmds: list[str]):
         raise commands.CommandError("The command is not valid!")
 
 
-async def check_valid_roles(ctx: commands.Context, roles: list[int]):
+async def check_valid_roles(ctx: commands.Context, role_ids: List[int]):
     """Raises an error if the roles are not valid."""
-    if not valid_role_id(roles):
+    __ROLES__ = {
+        role.id: (priority, role)
+        for priority, role in enumerate(reversed(ctx.guild.roles))
+    }
+    valid = all(role_id in __ROLES__ for role_id in role_ids)
+    if not valid:
         # Case: Roles are not valid
         await ctx.send("❌ Please provide valid role ids!")
         raise commands.CommandError("The role ids are not valid!")
 
 
-async def check_valid_text_channels(ctx: commands.Context, text_channels: list[int]):
+async def check_valid_text_channels(ctx: commands.Context, text_channel_ids: List[int]):
     """Raises an error if the text channels are not valid."""
-    if not valid_text_channel_id(text_channels):
+    __TEXT_CHANNELS__ = {channel.id: channel for channel in ctx.guild.text_channels}
+    valid = all(
+        text_channel_id in __TEXT_CHANNELS__ for text_channel_id in text_channel_ids
+    )
+    if not valid:
         # Case: Text channel ids are not valid
         await ctx.send("❌ Please provide valid text channel ids!")
         raise commands.CommandError("The text channel ids are not valid!")
 
 
-async def check_less_equal_author(ctx: commands.Context, roles: list[int]):
+async def check_less_equal_author(ctx: commands.Context, role_ids: List[int]):
     """Raises an error if the author role is higher than the given roles."""
-    if not less_equal_role_id(ctx.author.roles, roles):
+    __ROLES__ = {
+        role.id: (priority, role)
+        for priority, role in enumerate(reversed(ctx.guild.roles))
+    }
+    __AUTHOR_ROLES__ = {role.id: __ROLES__[role.id] for role in ctx.author.roles}
+    lpriority = min([__AUTHOR_ROLES__[role_id][0] for role_id in __AUTHOR_ROLES__])
+    gpriority = max([__ROLES__[role_id][0] for role_id in __ROLES__])
+    less_equal = all(
+        lpriority <= __ROLES__.get(role_id, (gpriority + 1, None))[0]
+        for role_id in role_ids
+    )
+    if not less_equal:
         # Case: Author role is higher than the given roles
         await ctx.send("❌ Your role is lower than the given roles!")
         raise commands.CommandError("Author role is lower than the given roles!")

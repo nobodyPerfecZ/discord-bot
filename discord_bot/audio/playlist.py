@@ -10,11 +10,11 @@ class AudioSource:
 
     Attributes:
         yt_url (str):
-            The URL of the YouTube video
+            The URL of the YouTube video.
 
         priority (int):
             The priority of the audio file.
-            Lower values represents higher priorities
+            Lower values represents higher priorities.
     """
 
     yt_url: str = field(compare=False)
@@ -35,7 +35,7 @@ class Playlist:
             return len(self._playlist) == 0
 
     async def full(self) -> bool:
-        """Checks whether the playlist has reached the maximum amount of stored audio sources."""
+        """Checks whether the playlist has reached the max amount of audio sources."""
         async with self._lock:
             if self._max_size is None:
                 return False

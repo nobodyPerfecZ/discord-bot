@@ -1,6 +1,7 @@
 """Tests for discord_bot/checks.py."""
 
 from dataclasses import dataclass, replace
+from typing import List
 
 import pytest
 from discord.ext import commands
@@ -67,7 +68,7 @@ class AuthorMock:
     """Mock class for ctx.author."""
 
     voice: VoiceMock | None
-    roles: list[RoleMock]
+    roles: List[RoleMock]
     guild_permissions: GuildPermissionMock
 
 
@@ -99,6 +100,9 @@ class CommandMock:
 class GuildMock:
     """Mock class for ctx.guild."""
 
+    roles: List[RoleMock]
+    text_channels: List[TextChannelMock]
+
 
 @dataclass
 class ContextMock:
@@ -125,7 +129,23 @@ __CTX__ = ContextMock(
     ),
     channel=TextChannelMock(id=725622500846993530, name="music🎼"),
     command=CommandMock(name="play"),
-    guild=GuildMock(),
+    guild=GuildMock(
+        roles=[
+            RoleMock(id=248897274002931722, name="@everyone"),
+            RoleMock(id=248898155867930624, name="Genin"),
+            RoleMock(id=686645319718404100, name="Chunin"),
+            RoleMock(id=385159915918065664, name="Jonin"),
+            RoleMock(id=248898634924425216, name="Kage"),
+            RoleMock(id=542084251038908436, name="#ANBU#"),
+        ],
+        text_channels=[
+            TextChannelMock(id=248897274002931722, name="chat☕"),
+            TextChannelMock(id=725622500846993530, name="music🎼"),
+            TextChannelMock(id=725461496036982914, name="invite📌"),
+            TextChannelMock(id=368795981124468745, name="animerecommendation"),
+            TextChannelMock(id=899013316364632104, name="bottest"),
+        ],
+    ),
     voice_client=VoiceClientMock(
         channel=VoiceChannelMock(id=248902220446302219, name="Gaming Channel #1👾"),
         playing=True,
@@ -376,10 +396,10 @@ async def test_check_valid_command_with_valid_command():
 async def test_check_valid_roles_with_invalid_roles():
     """Tests check_valid_roles() function with invalid roles."""
     ctx = __CTX__
-    roles = [542084251038908436, 248898634924425123]
+    role_ids = [542084251038908436, 248898634924425123]
 
     with pytest.raises(commands.CommandError):
-        await check_valid_roles(ctx, roles)
+        await check_valid_roles(ctx, role_ids)
 
 
 @pytest.mark.asyncio
@@ -419,16 +439,16 @@ async def test_check_less_equal_author_with_invalid_ctx():
             __CTX__.author, roles=[RoleMock(id=248898634924425216, name="Kage")]
         ),
     )
-    roles = [542084251038908436, 248898634924425216]
+    role_ids = [542084251038908436, 248898634924425216]
 
     with pytest.raises(commands.CommandError):
-        await check_less_equal_author(ctx, roles)
+        await check_less_equal_author(ctx, role_ids)
 
 
 @pytest.mark.asyncio
 async def test_check_less_equal_author_with_valid_ctx():
     """Tests check_less_equal_author() function with invalid ctx."""
     ctx = __CTX__
-    roles = [542084251038908436, 248898634924425216]
+    role_ids = [542084251038908436, 248898634924425216]
 
-    await check_less_equal_author(ctx, roles)
+    await check_less_equal_author(ctx, role_ids)

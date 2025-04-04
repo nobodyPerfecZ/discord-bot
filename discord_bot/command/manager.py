@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from typing import Dict, List
 
 import discord
 from discord.ext import commands
@@ -15,56 +16,36 @@ from discord_bot.checks import (
     check_valid_roles,
     check_valid_text_channels,
 )
-from discord_bot.util import (
-    __ROLES__,
-    __ROLES_PERMISSIONS__,
-    __TEXT_CHANNELS__,
-    __TEXT_CHANNELS_PERMISSIONS__,
-    valid_role_id,
-    valid_text_channel_id,
-)
 
 logger = logging.getLogger("discord")
 
 
 class Manager(commands.Cog):
     """
-    This class represents a suite of commands to add/change/set all parameters of the music bot.
+    A suite of commands to manage the music bot.
 
     Attributes:
-        wroles (dict[str, list[int]]):
+        wroles (Dict[str, List[int]]):
             The list of role ids that are allowed to use the music bot
 
-        wtext_channels (dict[str, list[int]]):
+        wtext_channels (Dict[str, List[int]]):
             The list of text channel ids where the music bot can be used
 
-        kwargs (dict[str, Any]):
+        kwargs:
             Additional keyword arguments
     """
 
     def __init__(
         self,
         bot: commands.Bot,
-        wroles: dict[str, list[int]],
-        wtext_channels: dict[str, list[int]],
+        wroles: Dict[str, List[int]],
+        wtext_channels: Dict[str, List[int]],
         **kwargs,
     ):
-
-        if all(not valid_role_id(wrole) for wrole in wroles.values()):
-            raise ValueError("wroles needs to be in __ROLES__!")
-        if all(
-            not valid_text_channel_id(wtext_channel)
-            for wtext_channel in wtext_channels.values()
-        ):
-            raise ValueError("wtext_channels need to be in __TEXT_CHANNELS__!")
         if wroles.keys() != wtext_channels.keys():
             raise ValueError(
                 "The keys of the wroles, wtext_channels need to be the same!"
             )
-        if list(wroles.keys()) != sorted(wroles.keys()):
-            raise ValueError("The keys of the wroles needs to be sorted!")
-        if list(wtext_channels.keys()) != sorted(wtext_channels.keys()):
-            raise ValueError("The keys of the wtext_channels needs to be sorted!")
 
         self.bot = bot
         self.wroles = wroles
@@ -186,14 +167,22 @@ class Manager(commands.Cog):
         await self._before_id(ctx, command)
 
         if command == "role":
-            names = list(map(lambda x: x[0], __ROLES__.values()))
-            ids = list(__ROLES__.keys())
+            header = "**Role ID to Name:**"
+            wrapper = {role.id: role for role in reversed(ctx.guild.roles)}
         else:
-            names = list(__TEXT_CHANNELS__.values())
-            ids = list(__TEXT_CHANNELS__.keys())
+            header = "***Text Channel ID to Name:***"
+            wrapper = {
+                text_channel.id: text_channel
+                for text_channel in ctx.guild.text_channels
+            }
 
-        output = "\n".join([f"{name}: {id}" for name, id in zip(names, ids)])
-        await ctx.send(f"```\n{output}\n```")
+        messages = []
+        max_length = len(str(max(wrapper, key=lambda x: len(str(x))))) + 3
+        for id in wrapper:
+            line = f"•{id}: ".ljust(max_length) + f"{wrapper[id].name}"
+            messages.append(line)
+        output = "\n".join(messages)
+        await ctx.send(f"{header}\n```\n{output}\n```")
 
     async def _before_permission(self, ctx: commands.Context, command: str):
         """Checks for the permission command before performing it."""
@@ -206,37 +195,47 @@ class Manager(commands.Cog):
     @commands.command(aliases=["Permission"])
     async def permission(self, ctx: commands.Context, command: str):
         """
-        Shows the permission matrix that displays for each command which roles / text channels are allowed to use it.
+        Shows for each command which roles / text channels are allowed to use.
 
         Args:
             ctx (commands.Context):
-                The context of the command
+                The context of the command.
 
             command (str):
-                The type of permission matrix to show
-                "role": shows the permission matrix for roles
-                "text_channel": shows the permission matrix for text channels
+                The type of permission to show:
+                - "role": shows the permission matrix for roles.
+                - "text_channel": shows the permission matrix for text channels.
         """
         await self._before_permission(ctx, command)
 
         if command == "role":
-            wrapper = __ROLES__
-            message = __ROLES_PERMISSIONS__
+            header = "**Whitelisted Roles:**"
+            wrapper = {role.id: role for role in reversed(ctx.guild.roles)}
             whitelist = self.wroles
         else:
-            wrapper = __TEXT_CHANNELS__
-            message = __TEXT_CHANNELS_PERMISSIONS__
+            header = "**Whitelisted Text Channels:**"
+            wrapper = {
+                text_channel.id: text_channel
+                for text_channel in reversed(ctx.guild.text_channels)
+            }
             whitelist = self.wtext_channels
 
-        ids = list(wrapper.keys())
-        cmds = list(whitelist.keys())
-        permissions = [
-            "✔️" if id in whitelist[cmd] else "✖️" for cmd in cmds for id in ids
-        ]
-        output = message.format(*permissions)
-        await ctx.send(f"```\n{output}\n```")
+        messages = []
+        max_length = (
+            len(self.bot.command_prefix) + len(max(whitelist, key=lambda x: len(x))) + 3
+        )
+        for cmd in whitelist:
+            line = f"•{self.bot.command_prefix}{cmd}: ".ljust(max_length)
+            items = [wrapper[item].name for item in whitelist[cmd] if item in wrapper]
+            if items:
+                line += " ".join(items)
+            else:
+                line += "---"
+            messages.append(line)
+        output = "\n".join(messages)
+        await ctx.send(f"{header}\n```\n{output}\n```")
 
-    async def _before_role(self, ctx: commands.Context, command: str, roles: list[int]):
+    async def _before_role(self, ctx: commands.Context, command: str, roles: List[int]):
         """Checks for the role command before performing it."""
         await asyncio.gather(
             check_author_whitelisted(ctx, self.wroles),
@@ -274,7 +273,7 @@ class Manager(commands.Cog):
             return await ctx.send("⚠️ Already using whitelisted roles!")
 
     async def _before_text_channel(
-        self, ctx: commands.Context, command: str, text_channels: list[int]
+        self, ctx: commands.Context, command: str, text_channels: List[int]
     ):
         """Checks for the text_channel command before performing it."""
         await asyncio.gather(
@@ -297,7 +296,7 @@ class Manager(commands.Cog):
             command (str):
                 The command to set the new whitelisted text channels
 
-            *text_channels (list[int]):
+            *text_channels (List[int]):
                 The list of text channel ids to be whitelisted
         """
         text_channels = list(map(int, text_channels))

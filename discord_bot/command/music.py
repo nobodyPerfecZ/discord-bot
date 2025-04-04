@@ -19,14 +19,13 @@ from discord_bot.checks import (
     check_valid_volume,
 )
 from discord_bot.transformer import YTDLVolumeTransformer
-from discord_bot.util import lpriority
 
 logger = logging.getLogger("discord")
 
 
 class Music(commands.Cog):
     """
-    This class represents a suite of commands to control a music bot in a Discord Server.
+    A suite of commands to control a music bot in a Discord Server.
 
     Attributes:
         bot (commands.Bot):
@@ -35,7 +34,7 @@ class Music(commands.Cog):
         volume (int):
             The starting volume with a value in between of 0 and 100
 
-        kwargs (dict[str, Any]):
+        kwargs:
             Additional keyword arguments
     """
 
@@ -53,6 +52,18 @@ class Music(commands.Cog):
         self.playlist = Playlist()
         self.should_leave = False
         self.kwargs = kwargs
+
+    @commands.command(aliases=["TestX"])
+    async def testX(self, ctx: commands.Context):
+        roles = ctx.guild.roles  # Get all roles in the server
+        role_list = "\n".join(
+            [f"• {role.name}" for role in roles if role.name != "@everyone"]
+        )  # Format roles as bullet points
+
+        if role_list:
+            await ctx.send(f"**Roles in this server:**\n{role_list}")
+        else:
+            await ctx.send("⚠️ No roles found in this server!")
 
     async def _before_add(self, ctx: commands.Context, url: str):
         """Checks for the add command before performing it."""
@@ -80,11 +91,16 @@ class Music(commands.Cog):
         """
         await self._before_add(ctx, url)
 
-        # Get the lowest priority of the author's roles
-        priority = lpriority(ctx.author.roles)
+        # Get the lowest priority (lpriority) of the author's roles
+        __ROLES__ = {
+            role.id: (priority, role)
+            for priority, role in enumerate(reversed(ctx.guild.roles))
+        }
+        __AUTHOR_ROLES__ = {role.id: __ROLES__[role.id] for role in ctx.author.roles}
+        lpriority = min([__AUTHOR_ROLES__[role_id][0] for role_id in __AUTHOR_ROLES__])
 
         # Create the audio source
-        audio_source = AudioSource(yt_url=url, priority=priority)
+        audio_source = AudioSource(yt_url=url, priority=lpriority)
 
         # Add the audio file to the playlist
         await self.playlist.add(audio_source)
@@ -233,7 +249,8 @@ class Music(commands.Cog):
             await ctx.send(f"✅ Next playing ``{player.title}``!")
         except yt_dlp.utils.YoutubeDLError:
             await ctx.send(
-                f"❌ Video ``{audio_source.yt_url}`` is unavailable, trying to play the next from the playlist!"
+                f"❌ Video ``{audio_source.yt_url}`` is unavailable, trying to play"
+                " next from the playlist!"
             )
             return await self._play_next(ctx)
 
@@ -294,7 +311,8 @@ class Music(commands.Cog):
             await ctx.send(f"✅ Playing ``{player.title}``!")
         except yt_dlp.utils.YoutubeDLError:
             await ctx.send(
-                f"❌ Video ``{audio_source.yt_url}`` is unavailable, trying to play the next from the playlist!"
+                f"❌ Video ``{audio_source.yt_url}`` is unavailable, trying to play"
+                " next from the playlist!"
             )
             return await self.play(ctx)
 

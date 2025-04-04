@@ -1,0 +1,17 @@
+services:
+  app:
+    image: "discord-bot:latest"
+    container_name: "discord-bot"
+    build:
+      context: "."
+      dockerfile: "dockerfile"
+    volumes:
+      # Mounts config.yaml from the host to the container
+      - "./config.yaml:/app/config.yaml"
+    environment:
+      # Replace with your actual Discord token
+      TOKEN: "your_discord_token_here"
+      # Replace with your desired command prefix
+      COMMAND_PREFIX: "!"
+    command: ["python", "main.py"]
+    restart: "unless-stopped"

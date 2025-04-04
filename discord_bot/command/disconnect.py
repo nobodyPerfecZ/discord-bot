@@ -25,7 +25,7 @@ class Disconnect(commands.Cog):
         timeout (int):
             The time in seconds, where the bot leaves the server and resets its playlist
 
-        kwargs (dict[str, Any]):
+        kwargs:
             Additional keyword arguments
     """
 
@@ -50,9 +50,9 @@ class Disconnect(commands.Cog):
     async def disconnect(self):
         """Background Task to handle the timeout."""
         if (
-            self.end_timeout == 0
-            or len(self.bot.voice_clients) == 0
-            or self.bot.voice_clients[0].is_playing()
+            (self.end_timeout == 0)
+            or (len(self.bot.voice_clients) == 0)
+            or (self.bot.voice_clients[0].is_playing())
         ):
             # Case: Reset the timeout
             self.curr_timeout = 0
