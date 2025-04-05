@@ -9,7 +9,7 @@ class AudioSource:
     Represents an audio source (item) from a YouTube video.
 
     Attributes:
-        yt_url (str):
+        url (str):
             The URL of the YouTube video.
 
         priority (int):
@@ -17,7 +17,7 @@ class AudioSource:
             Lower values represents higher priorities.
     """
 
-    yt_url: str = field(compare=False)
+    url: str = field(compare=False)
     priority: int
 
 

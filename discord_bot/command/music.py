@@ -100,12 +100,12 @@ class Music(commands.Cog):
         lpriority = min([__AUTHOR_ROLES__[role_id][0] for role_id in __AUTHOR_ROLES__])
 
         # Create the audio source
-        audio_source = AudioSource(yt_url=url, priority=lpriority)
+        audio_source = AudioSource(url=url, priority=lpriority)
 
         # Add the audio file to the playlist
         await self.playlist.add(audio_source)
 
-        await ctx.send(f"✅ Added ``{audio_source.yt_url}`` to the playlist!")
+        await ctx.send(f"✅ Added ``{audio_source.url}`` to the playlist!")
 
     async def _before_join(self, ctx: commands.Context):
         """Checks for the leave command before performing it."""
@@ -249,7 +249,7 @@ class Music(commands.Cog):
             await ctx.send(f"✅ Next playing ``{player.title}``!")
         except yt_dlp.utils.YoutubeDLError:
             await ctx.send(
-                f"❌ Video ``{audio_source.yt_url}`` is unavailable, trying to play"
+                f"❌ Video ``{audio_source.url}`` is unavailable, trying to play"
                 " next from the playlist!"
             )
             return await self._play_next(ctx)
@@ -311,7 +311,7 @@ class Music(commands.Cog):
             await ctx.send(f"✅ Playing ``{player.title}``!")
         except yt_dlp.utils.YoutubeDLError:
             await ctx.send(
-                f"❌ Video ``{audio_source.yt_url}`` is unavailable, trying to play"
+                f"❌ Video ``{audio_source.url}`` is unavailable, trying to play"
                 " next from the playlist!"
             )
             return await self.play(ctx)
@@ -378,13 +378,13 @@ class Music(commands.Cog):
             # Case: Bot plays/pause a song
             embed.add_field(
                 name=f"🎶 {ctx.voice_client.source.title}",
-                value=ctx.voice_client.source.yt_url,
+                value=ctx.voice_client.source.url,
             )
 
         async for i, audio_source in self.playlist.iterate():
             embed.add_field(
                 name=f"{i+1}. Song",
-                value=audio_source.yt_url,
+                value=audio_source.url,
                 inline=False,
             )
 

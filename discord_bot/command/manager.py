@@ -63,40 +63,45 @@ class Manager(commands.Cog):
 
     @commands.command(aliases=["Help"])
     async def help(self, ctx: commands.Context):
-        """
-        Sends the help message for the bot.
-        """
+        """Sends the help message for the bot."""
         await self._before_help(ctx)
 
         embed = discord.Embed(title="List of commands:", color=discord.Color.blue())
 
         embed.add_field(
             name="!add <url>",
-            value="Adds an audio source (YouTube URL) to the playlist.",
+            value="Adds a YouTube audio source to the playlist.",
             inline=False,
         )
         embed.add_field(
             name="!help",
-            value="Shows the list of commands.",
+            value="Displays a list of available commands.",
             inline=False,
         )
         embed.add_field(
             name="!id <type>",
-            value="Shows role or text channel IDs.",
+            value="Displays role or text channel IDs.",
             inline=False,
         )
         embed.add_field(
-            name="!join", value="Joins the voice channel of the author.", inline=False
+            name="!join",
+            value="Makes the bot join the author's current voice channel.",
+            inline=False,
         )
-        embed.add_field(name="!leave", value="Leaves the voice channel.", inline=False)
+        embed.add_field(
+            name="!leave",
+            value="Disconnects the bot from the voice channel.",
+            inline=False,
+        )
         embed.add_field(
             name="!pause",
-            value="Pauses the currently played audio source.",
+            value="Pauses the currently playing audio source.",
             inline=False,
         )
         embed.add_field(
             name="!permission <type>",
-            value="Shows which roles or text channels can use each command.",
+            value="Displays the roles allowed to use each command or the text "
+            + " channels where each command can be used.",
             inline=False,
         )
         embed.add_field(
@@ -110,33 +115,33 @@ class Manager(commands.Cog):
             inline=False,
         )
         embed.add_field(
-            name="!role <command> <role_id1> ... <role_idN>",
-            value="Whitelist the specified roles for the command.",
+            name="!role <cmd> <id1> ... <idN>",
+            value="Whitelists specified roles for a command.",
             inline=False,
         )
         embed.add_field(
             name="!show",
-            value="Shows the audio sources from the playlist.",
+            value="Lists the audio sources in the playlist.",
             inline=False,
         )
         embed.add_field(
             name="!skip",
-            value="Skips the currently played audio source in the playlist.",
+            value="Skips the currently playing audio source.",
             inline=False,
         )
         embed.add_field(
-            name="!text_channel <command> <text_channel_id1> ... <text_channel_idN>",
-            value="Whitelist the specified text channels for the command.",
+            name="!text_channel <cmd> <id1> ... <idN>",
+            value="Whitelists specified text channels for a command.",
             inline=False,
         )
         embed.add_field(
-            name="!timeout <timeout>",
-            value="Changes the timeout of the bot.",
+            name="!timeout <ts>",
+            value="Adjusts the bot's timeout duration.",
             inline=False,
         )
         embed.add_field(
-            name="!volume <volume>",
-            value="Changes the volume of the audio source.",
+            name="!volume <vol>",
+            value="Modifies the playback volume of the audio source.",
             inline=False,
         )
 

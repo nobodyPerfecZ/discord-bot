@@ -1,68 +1,80 @@
-# discord-bot 🤖
+<div align="middle">
+    <h1>
+        <p>
+            <img src="docs/images/logo.png", alt="Logo", width="300" height="300" />
+        </p>
+        🤖 Discord (Music) Bot
+        <br>
+        <a href="https://github.com/psf/black">
+            <img src="https://img.shields.io/badge/code%20style-black-000000.svg">
+        </a>
+        <a>
+            <img src="https://img.shields.io/badge/python-3.10-blue">
+        </a>
+        <a>
+            <img src="https://img.shields.io/badge/tests-passed-brightgreen">
+        </a>
+        <a>
+            <img src="https://img.shields.io/badge/coverage-100%25-brightgreen">
+        </a>
+    </h1>
+</div>
 
-Welcome to the `discord-bot` repository!
-This project aims to build a versatile music bot for the Discord server `Wixoss Gaming`, enabling users to enjoy their favorite YouTube tunes directly within voice channels.
+This repository contains code to build a music bot for any Discord servers, allowing users to stream their favorite YouTube music directly in voice channels.
 
 ## Features 🎶
 
-Our bot currently supports the following commands:
+The Discord bot supports the following commands:
 
-| Commands      |                                                                  |
-| :------------ | ---------------------------------------------------------------- |
-| !add          | Adds an audio source (YouTube URL) to the playlist.              |
-| !help         | Shows the list of commands.                                      |
-| !id           | Shows role or text channel IDs.                                  |
-| !join         | Joins the voice channel of the author.                           |
-| !leave        | Leaves the voice channel.                                        |
-| !pause        | Pauses the currently played audio source.                        |
-| !permission   | Shows which roles or text channels can use each command.         |
-| !play         | Starts playing the audio source from the playlist.               |
-| !reset        | Stops the currently played audio source and clears the playlist. |
-| !role         | Whitelist the specified roles for the command.                   |
-| !show         | Shows the audio sources from the playlist.                       |
-| !skip         | Skips the currently played audio source in the playlist.         |
-| !text_channel | Whitelist the specified text channels for the command.           |
-| !timeout      | Changes the timeout of the bot.                                  |
-| !volume       | Changes the volume of the audio source.                          |
+| Commands                            |                                                                                                     |
+| :---------------------------------- | --------------------------------------------------------------------------------------------------- |
+| !add <url>                          | Adds a YouTube audio source to the playlist.                                                        |
+| !help                               | Displays a list of available commands.                                                              |
+| !id <type>                          | Displays role or text channel IDs.                                                                  |
+| !join                               | Makes the bot join the author's current voice channel.                                              |
+| !leave                              | Disconnects the bot from the voice channel.                                                         |
+| !pause                              | Pauses the currently playing audio source.                                                          |
+| !permission <type>                  | Displays the roles allowed to use each command or the text channels where each command can be used. |
+| !play                               | Starts playing the audio source from the playlist.                                                  |
+| !reset                              | Stops the currently played audio source and clears the playlist.                                    |
+| !role <cmd> <id1> ... <idN>         | Whitelists specified roles for a command.                                                           |
+| !show                               | Lists the audio sources in the playlist.                                                            |
+| !skip                               | Skips the currently playing audio source.                                                           |
+| !text_channel <cmd> <id1> ... <idN> | Whitelists specified text channels for a command.                                                   |
+| !timeout <ts>                       | Adjusts the bot's timeout duration.                                                                 |
+| !volume <vol>                       | Modifies the playback volume of the audio source.                                                   |
 
-## Run the Bot on a Linux Server with `screen` 💻
+### Build the Discord Bot via Docker 🐳
 
-This guide explains how to run the discord bot even after closing your SSH connection using the `screen` package from Linux.
+1. **Clone the Repository**
 
-1. Ensure `screen` is installed on your server:
-
-```bash
-sudo apt install screen
-```
-
-2. Launch a `screen` session:
+Clone the repository to your local machine:
 
 ```bash
-screen
+git clone https://github.com/nobodyPerfecZ/discord-bot.git
 ```
 
-3. Within the screen session, run the Python script to start the bot:
+2. **Adjust the config.yaml file**
+
+The `config.yaml` file defines the bot's default settings, including which roles are allowed to use specific commands and in which text channels commands can be executed.
+
+Since each role and text channel in Discord has a unique ID, you need to customize the `config.yaml` file to match your server's configuration. This ensures the bot operates correctly within your Discord server.
+
+3. **Add your Discord Token to compose.yaml file**
+
+In the `compose.yaml` file, locate the `TOKEN` key and add your Discord API token there. This token is required for the bot to connect to your Discord server.
+
+4. **Build application with Docker**
+
+Ensure Docker and Docker Compose are installed on your system. If not, refer to the [Docker installation guide](https://docs.docker.com/engine/install/). Once installed, you can build and run the Discord bot using Docker Compose with the following command:
 
 ```bash
-python main.py
+sudo docker compose up -d --build
 ```
 
-4. You can now safely close your SSH connection.
-   The bot will continue running in the background within the screen session.
-   To reconnect later use `screen -ls` to see a list of active `screen` sessions.
-   Identify the session ID (e.g. `14760.pts-2.raspberrypi`) and reattach using:
+After running this command, the Discord bot should start and appear online in your Discord server.
 
-```bash
-screen -r <session_id>
-```
+## Development 🔧
 
-5. To stop the bot, use the following command to quit the session entirely:
-
-```bash
-screen -XS <session-id> quit
-```
-
-## Contributing 🔧
-
-We welcome any contribution to this project. If you found any bugs, want to change a feature or to add a new feature,
-please open an issue and submit a pull request for it.
+Contributions are welcome! Please fork the repository and submit a pull request.
+Make sure to follow the coding standards and write tests for any new features or bug fixes.
