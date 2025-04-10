@@ -38,7 +38,7 @@ The Discord bot supports the following commands:
 | !play                                                 | Starts playing the audio source from the playlist.                                                  |
 | !reset                                                | Stops the currently played audio source and clears the playlist.                                    |
 | !role &lt;cmd&gt; &lt;id1&gt; ... &lt;idN&gt;         | Whitelists specified roles for a command.                                                           |
-| !show                                                 | Lists the audio sources in the playlist.                                                            |
+| !show &lt;n&gt;                                       | Lists the audio sources in the playlist.                                                            |
 | !skip                                                 | Skips the currently playing audio source.                                                           |
 | !text_channel &lt;cmd&gt; &lt;id1&gt; ... &lt;idN&gt; | Whitelists specified text channels for a command.                                                   |
 | !timeout &lt;ts&gt;                                   | Adjusts the bot's timeout duration.                                                                 |

@@ -17,6 +17,7 @@ from discord_bot.checks import (
     check_same_voice_channel,
     check_text_channel_whitelisted,
     check_valid_command,
+    check_valid_n,
     check_valid_roles,
     check_valid_text_channels,
     check_valid_timeout,
@@ -312,6 +313,25 @@ async def test_check_non_empty_list_with_valid_list():
     array = [1, 2, 3]
 
     await check_non_empty_list(ctx, array)
+
+
+@pytest.mark.asyncio
+async def test_check_valid_n_with_invalid_n():
+    """Tests check_valid_n() function with invalid n."""
+    ctx = __CTX__
+    n = -1
+
+    with pytest.raises(commands.CommandError):
+        await check_valid_n(ctx, n)
+
+
+@pytest.mark.asyncio
+async def test_check_valid_n_with_valid_n():
+    """Tests check_valid_n() function with valid n."""
+    ctx = __CTX__
+    n = 5
+
+    await check_valid_n(ctx, n)
 
 
 @pytest.mark.asyncio

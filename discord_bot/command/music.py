@@ -15,6 +15,7 @@ from discord_bot.checks import (
     check_bot_voice_channel,
     check_same_voice_channel,
     check_text_channel_whitelisted,
+    check_valid_n,
     check_valid_url,
     check_valid_volume,
 )
@@ -99,13 +100,22 @@ class Music(commands.Cog):
         __AUTHOR_ROLES__ = {role.id: __ROLES__[role.id] for role in ctx.author.roles}
         lpriority = min([__AUTHOR_ROLES__[role_id][0] for role_id in __AUTHOR_ROLES__])
 
+        # Extract the title of the YouTube video
+        with yt_dlp.YoutubeDL({"quiet": True}) as ydl:
+            data = ydl.extract_info(url, download=False)
+
         # Create the audio source
-        audio_source = AudioSource(url=url, priority=lpriority)
+        audio_source = AudioSource(
+            title=data["title"],
+            user=ctx.author.name,
+            url=url,
+            priority=lpriority,
+        )
 
         # Add the audio file to the playlist
         await self.playlist.add(audio_source)
 
-        await ctx.send(f"✅ Added ``{audio_source.url}`` to the playlist!")
+        await ctx.send(f"✅ Added ``{audio_source.title}`` to the playlist!")
 
     async def _before_join(self, ctx: commands.Context):
         """Checks for the leave command before performing it."""
@@ -249,7 +259,7 @@ class Music(commands.Cog):
             await ctx.send(f"✅ Next playing ``{player.title}``!")
         except yt_dlp.utils.YoutubeDLError:
             await ctx.send(
-                f"❌ Video ``{audio_source.url}`` is unavailable, trying to play"
+                f"❌ Video ``{audio_source.title}`` is unavailable, trying to play"
                 " next from the playlist!"
             )
             return await self._play_next(ctx)
@@ -311,7 +321,7 @@ class Music(commands.Cog):
             await ctx.send(f"✅ Playing ``{player.title}``!")
         except yt_dlp.utils.YoutubeDLError:
             await ctx.send(
-                f"❌ Video ``{audio_source.url}`` is unavailable, trying to play"
+                f"❌ Video ``{audio_source.title}`` is unavailable, trying to play"
                 " next from the playlist!"
             )
             return await self.play(ctx)
@@ -350,7 +360,7 @@ class Music(commands.Cog):
 
         await ctx.send("✅ Reset playlist!")
 
-    async def _before_show(self, ctx: commands.Context):
+    async def _before_show(self, ctx: commands.Context, n: int):
         """Checks for the show command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
@@ -359,18 +369,22 @@ class Music(commands.Cog):
             check_author_voice_channel(ctx),
             check_bot_voice_channel(ctx),
             check_same_voice_channel(ctx),
+            check_valid_n(ctx, n),
         )
 
     @commands.command(aliases=["Show"])
-    async def show(self, ctx: commands.Context):
+    async def show(self, ctx: commands.Context, n: int = 5):
         """
         Shows the audio sources from the playlist.
 
         Args:
             ctx (commands.Context):
                 The discord context
+
+            n (int):
+                The number of audio sources to show
         """
-        await self._before_show(ctx)
+        await self._before_show(ctx, n)
 
         embed = discord.Embed(title="🎶 Playlist 🎶", color=discord.Color.blue())
 
@@ -378,13 +392,17 @@ class Music(commands.Cog):
             # Case: Bot plays/pause a song
             embed.add_field(
                 name=f"🎶 {ctx.voice_client.source.title}",
-                value=ctx.voice_client.source.url,
+                value=f"👤 {ctx.voice_client.source.user}",
+                inline=False,
             )
 
         async for i, audio_source in self.playlist.iterate():
+            if i >= n:
+                # Case: Number of audio sources to show is reached
+                break
             embed.add_field(
-                name=f"{i+1}. Song",
-                value=audio_source.url,
+                name=f"{i+1}. {audio_source.title}",
+                value=f"👤 {audio_source.user}",
                 inline=False,
             )
 

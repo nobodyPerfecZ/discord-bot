@@ -87,6 +87,14 @@ async def check_non_empty_list(ctx: commands.Context, array: list):
         raise commands.CommandError("The list is empty!")
 
 
+async def check_valid_n(ctx: commands.Context, n: int):
+    """Raises an error if the number is not higher than or equal to 0."""
+    if n < 0:
+        # Case: n is not higher than or equal to 0
+        await ctx.send("❌ Please provide a number higher than or equal to 0!")
+        raise commands.CommandError("n is not higher than or equal to 0!")
+
+
 async def check_valid_url(ctx: commands.Context, url: str):
     """Raises an error if the URL is not a valid YouTube URL."""
     if not url.startswith("https://www.youtube.com"):

@@ -120,7 +120,7 @@ class Manager(commands.Cog):
             inline=False,
         )
         embed.add_field(
-            name="!show",
+            name="!show <n>",
             value="Lists the audio sources in the playlist.",
             inline=False,
         )

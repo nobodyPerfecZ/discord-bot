@@ -9,6 +9,12 @@ class AudioSource:
     Represents an audio source (item) from a YouTube video.
 
     Attributes:
+        title (str):
+            The title of the YouTube video.
+
+        user (str):
+            The user who requested the YouTube video.
+
         url (str):
             The URL of the YouTube video.
 
@@ -17,6 +23,8 @@ class AudioSource:
             Lower values represents higher priorities.
     """
 
+    title: str = field(compare=False)
+    user: str = field(compare=False)
     url: str = field(compare=False)
     priority: int
 
@@ -64,5 +72,6 @@ class Playlist:
     async def iterate(self):
         """Asynchronously iterates over all items in the playlist."""
         async with self._lock:
-            for i, item in enumerate(self._playlist, 0):
+            playlist = heapq.nsmallest(len(self._playlist), self._playlist)
+            for i, item in enumerate(playlist, 0):
                 yield i, item
