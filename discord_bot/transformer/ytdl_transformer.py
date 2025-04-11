@@ -1,7 +1,4 @@
-import asyncio
-
 import discord
-import yt_dlp
 
 from discord_bot.audio import AudioSource
 
@@ -10,17 +7,6 @@ ffmpeg_options = {
     "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
     "options": "-vn",
 }
-
-# Options for youtube-dl
-ydl_options = {
-    "format": "bestaudio/best",
-    "keepvideo": False,
-    "extractaudio": True,
-    "noplaylist": True,
-    "skip_download": True,
-    "quiet": True,
-}
-ydl = yt_dlp.YoutubeDL(ydl_options)
 
 
 class YTDLVolumeTransformer(discord.PCMVolumeTransformer):
@@ -73,7 +59,6 @@ class YTDLVolumeTransformer(discord.PCMVolumeTransformer):
         cls,
         audio_source: AudioSource,
         volume: int,
-        loop: asyncio.AbstractEventLoop = None,
     ) -> "YTDLVolumeTransformer":
         """
         Construct a YTDLVolumeTransformer given the audio source.
@@ -89,17 +74,12 @@ class YTDLVolumeTransformer(discord.PCMVolumeTransformer):
             YTDLVolumeTransformer:
                 The audio stream of the YouTube video
         """
-        loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(
-            None, lambda: ydl.extract_info(audio_source.url)
-        )
-
         return cls(
-            discord.FFmpegPCMAudio(data["url"], **ffmpeg_options),
+            discord.FFmpegPCMAudio(audio_source.stream_url, **ffmpeg_options),
             title=audio_source.title,
             user=audio_source.user,
-            url=audio_source.url,
-            audio_url=data["url"],
+            url=audio_source.yt_url,
+            audio_url=audio_source.stream_url,
             priority=audio_source.priority,
             volume=volume,
         )

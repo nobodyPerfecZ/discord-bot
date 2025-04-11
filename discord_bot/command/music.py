@@ -23,6 +23,17 @@ from discord_bot.transformer import YTDLVolumeTransformer
 
 logger = logging.getLogger("discord")
 
+# Options for youtube-dl
+ydl_options = {
+    "format": "bestaudio/best",
+    "keepvideo": False,
+    "extractaudio": True,
+    "noplaylist": True,
+    "skip_download": True,
+    "quiet": True,
+}
+ydl = yt_dlp.YoutubeDL(ydl_options)
+
 
 class Music(commands.Cog):
     """
@@ -101,14 +112,15 @@ class Music(commands.Cog):
         lpriority = min([__AUTHOR_ROLES__[role_id][0] for role_id in __AUTHOR_ROLES__])
 
         # Extract the title of the YouTube video
-        with yt_dlp.YoutubeDL({"quiet": True}) as ydl:
-            data = ydl.extract_info(url, download=False)
+        loop = asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, lambda: ydl.extract_info(url))
 
         # Create the audio source
         audio_source = AudioSource(
             title=data["title"],
             user=ctx.author.name,
-            url=url,
+            stream_url=data["url"],
+            yt_url=url,
             priority=lpriority,
         )
 
@@ -309,7 +321,6 @@ class Music(commands.Cog):
             player = await YTDLVolumeTransformer.from_audio_source(
                 audio_source=audio_source,
                 volume=self.curr_volume,
-                loop=self.bot.loop,
             )
             ctx.voice_client.play(
                 player,

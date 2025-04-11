@@ -15,7 +15,10 @@ class AudioSource:
         user (str):
             The user who requested the YouTube video.
 
-        url (str):
+        stream_url (str):
+            The URL of the audio stream.
+
+        yt_url (str):
             The URL of the YouTube video.
 
         priority (int):
@@ -25,7 +28,8 @@ class AudioSource:
 
     title: str = field(compare=False)
     user: str = field(compare=False)
-    url: str = field(compare=False)
+    stream_url: str = field(compare=False)
+    yt_url: str = field(compare=False)
     priority: int
 
 
