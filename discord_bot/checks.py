@@ -97,10 +97,11 @@ async def check_valid_n(ctx: commands.Context, n: int):
 
 async def check_valid_url(ctx: commands.Context, url: str):
     """Raises an error if the URL is not a valid YouTube URL."""
-    if not url.startswith("https://www.youtube.com"):
-        # Case: URL is not a valid YouTube URL
-        await ctx.send(f"❌ Please try a different URL than {url}!")
-        raise commands.CommandError("URL is not a valid YouTube URL!")
+    if url.startswith("https://") or url.startswith("http://"):
+        if not url.startswith("https://www.youtube.com"):
+            # Case: URL is not a valid YouTube URL
+            await ctx.send(f"❌ Please try a different URL than {url}!")
+            raise commands.CommandError("URL is not a valid YouTube URL!")
 
 
 async def check_valid_volume(ctx: commands.Context, volume: int):

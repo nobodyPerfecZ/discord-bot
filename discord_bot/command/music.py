@@ -31,6 +31,7 @@ ydl_options = {
     "noplaylist": True,
     "skip_download": True,
     "quiet": True,
+    "default_search": "ytsearch",
 }
 ydl = yt_dlp.YoutubeDL(ydl_options)
 
@@ -65,7 +66,7 @@ class Music(commands.Cog):
         self.should_leave = False
         self.kwargs = kwargs
 
-    async def _before_add(self, ctx: commands.Context, url: str):
+    async def _before_add(self, ctx: commands.Context, url_or_search: str):
         """Checks for the add command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
@@ -74,11 +75,11 @@ class Music(commands.Cog):
             check_author_voice_channel(ctx),
             check_bot_voice_channel(ctx),
             check_same_voice_channel(ctx),
-            check_valid_url(ctx, url),
+            check_valid_url(ctx, url_or_search),
         )
 
     @commands.command(aliases=["Add"])
-    async def add(self, ctx: commands.Context, url: str):
+    async def add(self, ctx: commands.Context, url_or_search: str):
         """
         Adds an audio source (YouTube URL) to the playlist.
 
@@ -86,10 +87,10 @@ class Music(commands.Cog):
             ctx (commands.Context):
                 The discord context
 
-            url (str):
-                The URL of the YouTube video
+            url_or_search (str):
+                Either the URL of the YouTube Video or a search term
         """
-        await self._before_add(ctx, url)
+        await self._before_add(ctx, url_or_search)
 
         # Get the lowest priority (lpriority) of the author's roles
         __ROLES__ = {
@@ -101,14 +102,18 @@ class Music(commands.Cog):
 
         # Extract the title of the YouTube video
         loop = asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ydl.extract_info(url))
+        data = await loop.run_in_executor(None, lambda: ydl.extract_info(url_or_search))
+
+        if "entries" in data:
+            # Case: Searched for a video
+            data = data["entries"][0]
 
         # Create the audio source
         audio_source = AudioSource(
             title=data["title"],
             user=ctx.author.name,
             stream_url=data["url"],
-            yt_url=url,
+            yt_url=data["original_url"],
             priority=lpriority,
         )
 
