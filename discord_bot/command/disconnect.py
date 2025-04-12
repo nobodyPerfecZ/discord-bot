@@ -100,6 +100,6 @@ class Disconnect(commands.Cog):
             # Case: New timeout is not the same as before
             self.end_timeout = timeout
             self.curr_timeout = 0
-            return await ctx.send(f"✅ Changed timeout to ``{self.end_timeout}``!")
+            return await ctx.send(f"✅ Changed timeout to {self.end_timeout}!")
         # Case: New timeout is the same as before
-        return await ctx.send(f"⚠️ Already using timeout ``{self.end_timeout}``!")
+        return await ctx.send(f"⚠️ Already using timeout of {self.end_timeout}!")

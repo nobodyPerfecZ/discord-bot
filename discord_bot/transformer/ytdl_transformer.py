@@ -23,7 +23,7 @@ class YTDLVolumeTransformer(discord.PCMVolumeTransformer):
         user (str):
             The user who requested the audio stream
 
-        url (str):
+        yt_url (str):
             The URL of the YouTube video
 
         audio_url (str):
@@ -42,7 +42,7 @@ class YTDLVolumeTransformer(discord.PCMVolumeTransformer):
         *,
         title: str,
         user: str,
-        url: str,
+        yt_url: str,
         audio_url: str,
         priority: int,
         volume: int,
@@ -50,7 +50,7 @@ class YTDLVolumeTransformer(discord.PCMVolumeTransformer):
         super().__init__(original=source, volume=volume / 100)
         self.title = title
         self.user = user
-        self.url = url
+        self.yt_url = yt_url
         self.audio_url = audio_url
         self.priority = priority
 
@@ -78,7 +78,7 @@ class YTDLVolumeTransformer(discord.PCMVolumeTransformer):
             discord.FFmpegPCMAudio(audio_source.stream_url, **ffmpeg_options),
             title=audio_source.title,
             user=audio_source.user,
-            url=audio_source.yt_url,
+            yt_url=audio_source.yt_url,
             audio_url=audio_source.stream_url,
             priority=audio_source.priority,
             volume=volume,

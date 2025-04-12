@@ -65,18 +65,6 @@ class Music(commands.Cog):
         self.should_leave = False
         self.kwargs = kwargs
 
-    @commands.command(aliases=["TestX"])
-    async def testX(self, ctx: commands.Context):
-        roles = ctx.guild.roles  # Get all roles in the server
-        role_list = "\n".join(
-            [f"• {role.name}" for role in roles if role.name != "@everyone"]
-        )  # Format roles as bullet points
-
-        if role_list:
-            await ctx.send(f"**Roles in this server:**\n{role_list}")
-        else:
-            await ctx.send("⚠️ No roles found in this server!")
-
     async def _before_add(self, ctx: commands.Context, url: str):
         """Checks for the add command before performing it."""
         manager = self.bot.get_cog("Manager")
@@ -127,7 +115,9 @@ class Music(commands.Cog):
         # Add the audio file to the playlist
         await self.playlist.add(audio_source)
 
-        await ctx.send(f"✅ Added ``{audio_source.title}`` to the playlist!")
+        await ctx.send(
+            f"✅ Added [{audio_source.title}]({audio_source.yt_url}) to the playlist!"
+        )
 
     async def _before_join(self, ctx: commands.Context):
         """Checks for the leave command before performing it."""
@@ -153,13 +143,13 @@ class Music(commands.Cog):
         if ctx.voice_client is None:
             # Case: Bot is not in a voice channel
             await author_channel.connect()
-            return await ctx.send(f"✅ Moved to ``{author_channel}``!")
+            return await ctx.send(f"✅ Moved to {author_channel}!")
         else:
             # Case: Bot is in a voice channel
             bot_channel = ctx.voice_client.channel
             if author_channel == bot_channel:
                 # Case: Bot is in the same voice channel as the author
-                return await ctx.send(f"⚠️ Stayed in ``{bot_channel}``!")
+                return await ctx.send(f"⚠️ Stayed in {bot_channel}!")
 
             # Case: Bot is not in the same voice channel as the author
             if ctx.voice_client.is_playing():
@@ -167,9 +157,7 @@ class Music(commands.Cog):
                 ctx.voice_client.pause()
 
             await ctx.voice_client.move_to(author_channel)
-            return await ctx.send(
-                f"✅ Moved from ``{bot_channel}`` to ``{author_channel}``!"
-            )
+            return await ctx.send(f"✅ Moved from {bot_channel} to {author_channel}!")
 
     async def _before_leave(self, ctx: commands.Context):
         """Checks for the leave command before performing it."""
@@ -208,7 +196,7 @@ class Music(commands.Cog):
         # Disconnect the bot from the voice channel
         await ctx.voice_client.disconnect(force=False)
 
-        return await ctx.send(f"✅ Left ``{voice_channel}``!")
+        return await ctx.send(f"✅ Left {voice_channel}!")
 
     async def _before_pause(self, ctx: commands.Context):
         """Checks for the pause command before performing it."""
@@ -236,13 +224,15 @@ class Music(commands.Cog):
         if ctx.voice_client.is_playing():
             # Case: Bot plays an audio source
             ctx.voice_client.pause()
-            return await ctx.send(f"✅ Paused ``{ctx.voice_client.source.title}``!")
+            title = ctx.voice_client.source.title
+            yt_url = ctx.voice_client.source.yt_url
+            return await ctx.send(f"✅ Paused [{title}]({yt_url})!")
 
         if ctx.voice_client.is_paused():
             # Case: Bot is paused
-            return await ctx.send(
-                f"⚠️ Already paused ``{ctx.voice_client.source.title}``!"
-            )
+            title = ctx.voice_client.source.title
+            yt_url = ctx.voice_client.source.yt_url
+            return await ctx.send(f"⚠️ Already paused [{title}]({yt_url})!")
 
     async def _play_next(self, ctx: commands.Context):
         """Plays the next song in the playlist."""
@@ -268,11 +258,15 @@ class Music(commands.Cog):
                     loop=self.bot.loop,
                 ),
             )
-            await ctx.send(f"✅ Next playing ``{player.title}``!")
+            title = player.title
+            yt_url = player.yt_url
+            await ctx.send(f"✅ Next playing [{title}]({yt_url})!")
         except yt_dlp.utils.YoutubeDLError:
+            title = audio_source.title
+            yt_url = audio_source.yt_url
             await ctx.send(
-                f"❌ Video ``{audio_source.title}`` is unavailable, trying to play"
-                " next from the playlist!"
+                f"❌ Video [{title}]({yt_url}) is unavailable, trying to play next from"
+                " the playlist!"
             )
             return await self._play_next(ctx)
 
@@ -300,14 +294,16 @@ class Music(commands.Cog):
 
         if ctx.voice_client.is_playing():
             # Case: Bot already plays music
-            return await ctx.send(
-                f"⚠️ Already playing ``{ctx.voice_client.source.title}``!"
-            )
+            title = ctx.voice_client.source.title
+            yt_url = ctx.voice_client.source.yt_url
+            return await ctx.send(f"⚠️ Already playing [{title}]({yt_url})!")
 
         if ctx.voice_client.is_paused():
             # Case: Bot is paused
             ctx.voice_client.resume()
-            return await ctx.send(f"✅ Resuming ``{ctx.voice_client.source.title}``!")
+            title = ctx.voice_client.source.title
+            yt_url = ctx.voice_client.source.yt_url
+            return await ctx.send(f"✅ Resuming [{title}]({yt_url})!")
 
         if await self.playlist.empty():
             # Case: There is no music in the playlist
@@ -329,11 +325,15 @@ class Music(commands.Cog):
                     loop=self.bot.loop,
                 ),
             )
-            await ctx.send(f"✅ Playing ``{player.title}``!")
+            title = player.title
+            yt_url = player.yt_url
+            await ctx.send(f"✅ Playing [{title}]({yt_url})!")
         except yt_dlp.utils.YoutubeDLError:
+            title = audio_source.title
+            yt_url = audio_source.yt_url
             await ctx.send(
-                f"❌ Video ``{audio_source.title}`` is unavailable, trying to play"
-                " next from the playlist!"
+                f"❌ Video [{title}]({yt_url}) is unavailable, trying to play next from"
+                " the playlist!"
             )
             return await self.play(ctx)
 
@@ -401,9 +401,12 @@ class Music(commands.Cog):
 
         if ctx.voice_client.is_playing() or ctx.voice_client.is_paused():
             # Case: Bot plays/pause a song
+            user = ctx.voice_client.source.user
+            title = ctx.voice_client.source.title
+            yt_url = ctx.voice_client.source.yt_url
             embed.add_field(
-                name=f"🎶 {ctx.voice_client.source.title}",
-                value=f"👤 {ctx.voice_client.source.user}",
+                name=f"👤 {user}",
+                value=f"🎶 [{title}]({yt_url})",
                 inline=False,
             )
 
@@ -411,9 +414,12 @@ class Music(commands.Cog):
             if i >= n:
                 # Case: Number of audio sources to show is reached
                 break
+            user = audio_source.user
+            title = audio_source.title
+            yt_url = audio_source.yt_url
             embed.add_field(
-                name=f"{i+1}. {audio_source.title}",
-                value=f"👤 {audio_source.user}",
+                name=f"👤 {user}",
+                value=f"{i+1}. [{title}]({yt_url})",
                 inline=False,
             )
 
@@ -476,6 +482,6 @@ class Music(commands.Cog):
             ):
                 # Case: Bot plays/pause a song
                 ctx.voice_client.source.volume = self.curr_volume / 100
-            return await ctx.send(f"✅ Changed volume to ``{self.curr_volume}``!")
+            return await ctx.send(f"✅ Changed volume to {self.curr_volume}!")
         # Case: New volume is the same as before
-        return await ctx.send(f"⚠️ Already using volume ``{self.curr_volume}``!")
+        return await ctx.send(f"⚠️ Already using volume of {self.curr_volume}!")
