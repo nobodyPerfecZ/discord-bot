@@ -79,7 +79,7 @@ class Music(commands.Cog):
         )
 
     @commands.command(aliases=["Add"])
-    async def add(self, ctx: commands.Context, url_or_search: str):
+    async def add(self, ctx: commands.Context, *url_or_search):
         """
         Adds an audio source (YouTube URL) to the playlist.
 
@@ -90,6 +90,7 @@ class Music(commands.Cog):
             url_or_search (str):
                 Either the URL of the YouTube Video or a search term
         """
+        url_or_search = " ".join(url_or_search)
         await self._before_add(ctx, url_or_search)
 
         # Get the lowest priority (lpriority) of the author's roles
