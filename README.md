@@ -26,23 +26,23 @@ This repository contains code to build a music bot for any Discord servers, allo
 
 The Discord bot supports the following commands:
 
-| Commands                                              |                                                                                                     |
-| :---------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| !add &lt;url&gt;                                      | Adds a YouTube audio source to the playlist.                                                        |
-| !help                                                 | Displays a list of available commands.                                                              |
-| !id &lt;type&gt;                                      | Displays role or text channel IDs.                                                                  |
-| !join                                                 | Makes the bot join the author's current voice channel.                                              |
-| !leave                                                | Disconnects the bot from the voice channel.                                                         |
-| !pause                                                | Pauses the currently playing audio source.                                                          |
-| !permission &lt;type&gt;                              | Displays the roles allowed to use each command or the text channels where each command can be used. |
-| !play                                                 | Starts playing the audio source from the playlist.                                                  |
-| !reset                                                | Stops the currently played audio source and clears the playlist.                                    |
-| !role &lt;cmd&gt; &lt;id1&gt; ... &lt;idN&gt;         | Whitelists specified roles for a command.                                                           |
-| !show &lt;n&gt;                                       | Lists the audio sources in the playlist.                                                            |
-| !skip                                                 | Skips the currently playing audio source.                                                           |
-| !text_channel &lt;cmd&gt; &lt;id1&gt; ... &lt;idN&gt; | Whitelists specified text channels for a command.                                                   |
-| !timeout &lt;ts&gt;                                   | Adjusts the bot's timeout duration.                                                                 |
-| !volume &lt;vol&gt;                                   | Modifies the playback volume of the audio source.                                                   |
+| Commands                                              |                                                                                                      |
+| :---------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| !add &lt;url or query&gt;                             | Adds a YouTube audio source to the playlist.                                                         |
+| !help                                                 | Displays a list of available commands.                                                               |
+| !id                                                   | Displays role and text channel IDs.                                                                  |
+| !join                                                 | Makes the bot join the author's current voice channel.                                               |
+| !leave                                                | Disconnects the bot from the voice channel.                                                          |
+| !pause                                                | Pauses the currently playing audio source.                                                           |
+| !permission                                           | Displays the roles allowed to use each command and the text channels where each command can be used. |
+| !play                                                 | Starts playing the audio source from the playlist.                                                   |
+| !reset                                                | Stops the currently played audio source and clears the playlist.                                     |
+| !role &lt;cmd&gt; &lt;id1&gt; ... &lt;idN&gt;         | Whitelists specified roles for a command.                                                            |
+| !show &lt;n&gt;                                       | Lists the first `n` audio sources in the playlist.                                                   |
+| !skip                                                 | Skips the currently playing audio source.                                                            |
+| !text_channel &lt;cmd&gt; &lt;id1&gt; ... &lt;idN&gt; | Whitelists specified text channels for a command.                                                    |
+| !timeout &lt;ts&gt;                                   | Adjusts the bot's timeout duration.                                                                  |
+| !volume &lt;vol&gt;                                   | Modifies the playback volume of the audio source.                                                    |
 
 ### Build the Discord Bot via Docker 🐳
 

@@ -70,7 +70,7 @@ class Manager(commands.Cog):
             embed = discord.Embed(title="List of commands:", color=discord.Color.blue())
 
             embed.add_field(
-                name="!add <url>",
+                name="!add <url or query>",
                 value="Adds a YouTube audio source to the playlist.",
                 inline=False,
             )
@@ -80,8 +80,8 @@ class Manager(commands.Cog):
                 inline=False,
             )
             embed.add_field(
-                name="!id <type>",
-                value="Displays role or text channel IDs.",
+                name="!id",
+                value="Displays role and text channel IDs.",
                 inline=False,
             )
             embed.add_field(
@@ -100,8 +100,8 @@ class Manager(commands.Cog):
                 inline=False,
             )
             embed.add_field(
-                name="!permission <type>",
-                value="Displays the roles allowed to use each command or the text "
+                name="!permission",
+                value="Displays the roles allowed to use each command and the text "
                 + " channels where each command can be used.",
                 inline=False,
             )
@@ -123,7 +123,7 @@ class Manager(commands.Cog):
             )
             embed.add_field(
                 name="!show <n>",
-                value="Lists the audio sources in the playlist.",
+                value="Lists the first `n` audio sources in the playlist.",
                 inline=False,
             )
             embed.add_field(
@@ -149,104 +149,116 @@ class Manager(commands.Cog):
 
             await ctx.send(embed=embed)
 
-    async def _before_id(self, ctx: commands.Context, command: str):
+    async def _before_id(self, ctx: commands.Context):
         """Checks for the id command before performing it."""
         await asyncio.gather(
             check_author_whitelisted(ctx, self.wroles),
             check_text_channel_whitelisted(ctx, self.wtext_channels),
-            check_valid_command(ctx, command, ["role", "text_channel"]),
         )
 
-    @commands.command(aliases=["Id"])
-    async def id(self, ctx: commands.Context, command: str):
+    @commands.command(aliases=["Ids"])
+    async def id(self, ctx: commands.Context):
         """
         Shows the ids of the roles / text channels of the discord server.
 
         Args:
             ctx (commands.Context):
                 The context of the command
-
-            command (str):
-                The type of ids to show
-                "role": shows the ids of the roles
-                "text_channel": shows the ids of the text channels
         """
         async with ctx.typing():
-            await self._before_id(ctx, command)
+            await self._before_id(ctx)
 
-            if command == "role":
-                header = "**Role ID to Name:**"
-                wrapper = {role.id: role for role in reversed(ctx.guild.roles)}
-            else:
-                header = "***Text Channel ID to Name:***"
-                wrapper = {
-                    text_channel.id: text_channel
-                    for text_channel in ctx.guild.text_channels
-                }
+            role_header = "**Role ID to Name:**"
+            role_wrapper = {role.id: role for role in reversed(ctx.guild.roles)}
+            role_max_length = len(str(max(role_wrapper, key=lambda x: len(str(x))))) + 3
+            role_messages = [
+                f"•{id}: ".ljust(role_max_length) + f"{role_wrapper[id].name}"
+                for id in role_wrapper
+            ]
+            role_output = "\n".join(role_messages)
 
-            messages = []
-            max_length = len(str(max(wrapper, key=lambda x: len(str(x))))) + 3
-            for id in wrapper:
-                line = f"•{id}: ".ljust(max_length) + f"{wrapper[id].name}"
-                messages.append(line)
-            output = "\n".join(messages)
-            await ctx.send(f"{header}\n```\n{output}\n```")
+            tc_header = "***Text Channel ID to Name:***"
+            tc_wrapper = {tc.id: tc for tc in ctx.guild.text_channels}
+            tc_max_length = len(str(max(tc_wrapper, key=lambda x: len(str(x))))) + 3
+            tc_messages = [
+                f"•{id}: ".ljust(tc_max_length) + f"{tc_wrapper[id].name}"
+                for id in tc_wrapper
+            ]
+            tc_output = "\n".join(tc_messages)
 
-    async def _before_permission(self, ctx: commands.Context, command: str):
+            await ctx.send(
+                f"{role_header}\n```\n{role_output}\n```"
+                f"{tc_header}\n```\n{tc_output}\n```"
+            )
+
+    async def _before_permission(self, ctx: commands.Context):
         """Checks for the permission command before performing it."""
         await asyncio.gather(
             check_author_whitelisted(ctx, self.wroles),
             check_text_channel_whitelisted(ctx, self.wtext_channels),
-            check_valid_command(ctx, command, ["role", "text_channel"]),
         )
 
     @commands.command(aliases=["Permission"])
-    async def permission(self, ctx: commands.Context, command: str):
+    async def permission(self, ctx: commands.Context):
         """
         Shows for each command which roles / text channels are allowed to use.
 
         Args:
             ctx (commands.Context):
                 The context of the command.
-
-            command (str):
-                The type of permission to show:
-                - "role": shows the permission matrix for roles.
-                - "text_channel": shows the permission matrix for text channels.
         """
         async with ctx.typing():
-            await self._before_permission(ctx, command)
+            await self._before_permission(ctx)
 
-            if command == "role":
-                header = "**Whitelisted Roles:**"
-                wrapper = {role.id: role for role in reversed(ctx.guild.roles)}
-                whitelist = self.wroles
-            else:
-                header = "**Whitelisted Text Channels:**"
-                wrapper = {
-                    text_channel.id: text_channel
-                    for text_channel in reversed(ctx.guild.text_channels)
-                }
-                whitelist = self.wtext_channels
-
-            messages = []
-            max_length = (
+            role_header = "**Whitelisted Roles:**"
+            role_wrapper = {role.id: role for role in reversed(ctx.guild.roles)}
+            role_whitelist = self.wroles
+            role_max_length = (
                 len(self.bot.command_prefix)
-                + len(max(whitelist, key=lambda x: len(x)))
+                + len(max(role_whitelist, key=lambda x: len(x)))
                 + 3
             )
-            for cmd in whitelist:
-                line = f"•{self.bot.command_prefix}{cmd}: ".ljust(max_length)
+            role_messages = []
+            for cmd in role_whitelist:
+                line = f"•{self.bot.command_prefix}{cmd}: ".ljust(role_max_length)
                 items = [
-                    wrapper[item].name for item in whitelist[cmd] if item in wrapper
+                    role_wrapper[item].name
+                    for item in role_whitelist[cmd]
+                    if item in role_wrapper
                 ]
                 if items:
                     line += " ".join(items)
                 else:
                     line += "---"
-                messages.append(line)
-            output = "\n".join(messages)
-            await ctx.send(f"{header}\n```\n{output}\n```")
+                role_messages.append(line)
+            role_output = "\n".join(role_messages)
+
+            tc_header = "**Whitelisted Text Channels:**"
+            tc_wrapper = {tc.id: tc for tc in reversed(ctx.guild.text_channels)}
+            tc_whitelist = self.wtext_channels
+            tc_max_length = (
+                len(self.bot.command_prefix)
+                + len(max(tc_whitelist, key=lambda x: len(x)))
+                + 3
+            )
+            tc_messages = []
+            for cmd in tc_whitelist:
+                line = f"•{self.bot.command_prefix}{cmd}: ".ljust(tc_max_length)
+                items = [
+                    tc_wrapper[item].name
+                    for item in tc_whitelist[cmd]
+                    if item in tc_wrapper
+                ]
+                if items:
+                    line += " ".join(items)
+                else:
+                    line += "---"
+                tc_messages.append(line)
+            tc_output = "\n".join(tc_messages)
+            await ctx.send(
+                f"{role_header}\n```\n{role_output}\n```"
+                f"{tc_header}\n```\n{tc_output}\n```"
+            )
 
     async def _before_role(self, ctx: commands.Context, command: str, roles: List[int]):
         """Checks for the role command before performing it."""
