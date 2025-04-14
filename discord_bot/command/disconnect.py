@@ -94,12 +94,13 @@ class Disconnect(commands.Cog):
             timeout (int):
                 The new timeout in seconds
         """
-        await self._before_timeout(ctx, timeout)
+        async with ctx.typing():
+            await self._before_timeout(ctx, timeout)
 
-        if self.end_timeout != timeout:
-            # Case: New timeout is not the same as before
-            self.end_timeout = timeout
-            self.curr_timeout = 0
-            return await ctx.send(f"✅ Changed timeout to {self.end_timeout}!")
-        # Case: New timeout is the same as before
-        return await ctx.send(f"⚠️ Already using timeout of {self.end_timeout}!")
+            if self.end_timeout != timeout:
+                # Case: New timeout is not the same as before
+                self.end_timeout = timeout
+                self.curr_timeout = 0
+                return await ctx.send(f"✅ Changed timeout to {self.end_timeout}!")
+            # Case: New timeout is the same as before
+            return await ctx.send(f"⚠️ Already using timeout of {self.end_timeout}!")
