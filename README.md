@@ -26,7 +26,7 @@ This repository contains code to build a music bot for any Discord servers, allo
 
 The Discord bot supports the following commands:
 
-| Commands                                              |                                                                                                      |
+| Commands                                              | Description                                                                                          |
 | :---------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | !add &lt;url or query&gt;                             | Adds a YouTube audio source to the playlist.                                                         |
 | !help                                                 | Displays a list of available commands.                                                               |
