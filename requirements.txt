@@ -2,3 +2,4 @@ discord.py>=2.4.0
 discord.py[voice]>=2.4.0
 yt-dlp>=2024.12.3
 PyYAML>=6.0.2
+ollama>=0.4.8
