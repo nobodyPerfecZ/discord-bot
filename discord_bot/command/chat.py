@@ -67,7 +67,7 @@ class Chat(commands.Cog):
         """
         client = AsyncClient(host="http://localhost:11434")
         response = await client.chat(
-            model="gemma3:27b",
+            model=self.model,
             messages=[{"role": "user", "content": message}],
             stream=False,
         )
