@@ -3,8 +3,8 @@
 import asyncio
 from typing import AsyncIterator
 
-from ollama import AsyncClient, ChatResponse
 from discord.ext import commands
+from ollama import AsyncClient, ChatResponse
 
 from discord_bot.checks import (
     check_author_voice_channel,
@@ -68,7 +68,16 @@ class Chat(commands.Cog):
         client = AsyncClient(host="http://localhost:11434")
         response = await client.chat(
             model=self.model,
-            messages=[{"role": "user", "content": message}],
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Answer every question using one short sentence, no longer "
+                        "than 20 characters. Do not use lists."
+                    ),
+                },
+                {"role": "user", "content": message},
+            ],
             stream=False,
         )
         return response["message"]["content"]
