@@ -14,7 +14,13 @@ from discord_bot.command import Chat, Disconnect, Manager, Music
 async def main(client: commands.Bot, **kwargs):
     """Starting point of the bot."""
     async with client:
-        await client.add_cog(Chat(client, **kwargs["chat"]))
+        await client.add_cog(
+            Chat(
+                client,
+                host=os.environ["OLLAMA_HOST"],
+                model=os.environ["OLLAMA_MODEL"],
+            )
+        )
         await client.add_cog(Music(client, **kwargs["music"]))
         await client.add_cog(Manager(client, **kwargs["manager"]))
         await client.add_cog(Disconnect(client, **kwargs["disconnect"]))

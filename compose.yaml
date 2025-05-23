@@ -14,5 +14,9 @@ services:
       TOKEN: "your_discord_token_here"
       # Replace with your desired command prefix
       COMMAND_PREFIX: "!"
+      # Replace with your desired ollama location
+      OLLAMA_HOST: "https://localhost:11434"
+      # Replace with your desired model
+      OLLAMA_MODEL: "gemma3:1b"
     command: ["python", "main.py"]
     restart: "unless-stopped"
