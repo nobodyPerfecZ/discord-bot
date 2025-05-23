@@ -9,9 +9,6 @@ from ollama import AsyncClient, ChatResponse
 from discord_bot.checks import (
     check_author_id_blacklisted,
     check_author_role_blacklisted,
-    check_author_voice_channel,
-    check_bot_voice_channel,
-    check_same_voice_channel,
     check_text_channel_blacklisted,
     check_voice_channel_blacklisted,
 )

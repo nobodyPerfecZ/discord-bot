@@ -508,4 +508,6 @@ class Manager(commands.Cog):
                         self.voice_channels[command] = voice_channels
                         return await ctx.send("✅ Changed blacklisted voice channels!")
                     # Case: Already using blacklisted voice channels
-                    return await ctx.send("⚠️ Already using blacklisted voice channels!")
+                    return await ctx.send(
+                        "⚠️ Already using blacklisted voice channels!"
+                    )
