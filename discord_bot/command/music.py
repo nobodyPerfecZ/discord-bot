@@ -9,15 +9,17 @@ from discord.ext import commands
 
 from discord_bot.audio import AudioSource, Playlist
 from discord_bot.checks import (
+    check_author_id_blacklisted,
+    check_author_role_blacklisted,
     check_author_voice_channel,
-    check_author_whitelisted,
     check_bot_streaming,
     check_bot_voice_channel,
     check_same_voice_channel,
-    check_text_channel_whitelisted,
+    check_text_channel_blacklisted,
     check_valid_n,
     check_valid_url,
     check_valid_volume,
+    check_voice_channel_blacklisted,
 )
 from discord_bot.transformer import YTDLVolumeTransformer
 from discord_bot.util import remove_emojis, truncate
@@ -71,8 +73,10 @@ class Music(commands.Cog):
         """Checks for the add command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.wroles),
-            check_text_channel_whitelisted(ctx, manager.wtext_channels),
+            check_author_id_blacklisted(ctx, manager.users),
+            check_author_role_blacklisted(ctx, manager.roles),
+            check_text_channel_blacklisted(ctx, manager.text_channels),
+            check_voice_channel_blacklisted(ctx, manager.voice_channels),
             check_author_voice_channel(ctx),
             check_bot_voice_channel(ctx),
             check_same_voice_channel(ctx),
@@ -142,8 +146,10 @@ class Music(commands.Cog):
         """Checks for the leave command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.wroles),
-            check_text_channel_whitelisted(ctx, manager.wtext_channels),
+            check_author_id_blacklisted(ctx, manager.users),
+            check_author_role_blacklisted(ctx, manager.roles),
+            check_text_channel_blacklisted(ctx, manager.text_channels),
+            check_voice_channel_blacklisted(ctx, manager.voice_channels),
             check_author_voice_channel(ctx),
         )
 
@@ -185,8 +191,10 @@ class Music(commands.Cog):
         """Checks for the leave command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.wroles),
-            check_text_channel_whitelisted(ctx, manager.wtext_channels),
+            check_author_id_blacklisted(ctx, manager.users),
+            check_author_role_blacklisted(ctx, manager.roles),
+            check_text_channel_blacklisted(ctx, manager.text_channels),
+            check_voice_channel_blacklisted(ctx, manager.voice_channels),
             check_author_voice_channel(ctx),
             check_bot_voice_channel(ctx),
             check_same_voice_channel(ctx),
@@ -225,8 +233,10 @@ class Music(commands.Cog):
         """Checks for the pause command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.wroles),
-            check_text_channel_whitelisted(ctx, manager.wtext_channels),
+            check_author_id_blacklisted(ctx, manager.users),
+            check_author_role_blacklisted(ctx, manager.roles),
+            check_text_channel_blacklisted(ctx, manager.text_channels),
+            check_voice_channel_blacklisted(ctx, manager.voice_channels),
             check_author_voice_channel(ctx),
             check_bot_voice_channel(ctx),
             check_same_voice_channel(ctx),
@@ -298,8 +308,10 @@ class Music(commands.Cog):
         """Checks for the play command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.wroles),
-            check_text_channel_whitelisted(ctx, manager.wtext_channels),
+            check_author_id_blacklisted(ctx, manager.users),
+            check_author_role_blacklisted(ctx, manager.roles),
+            check_text_channel_blacklisted(ctx, manager.text_channels),
+            check_voice_channel_blacklisted(ctx, manager.voice_channels),
             check_author_voice_channel(ctx),
             check_bot_voice_channel(ctx),
             check_same_voice_channel(ctx),
@@ -366,8 +378,10 @@ class Music(commands.Cog):
         """Checks for the reset command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.wroles),
-            check_text_channel_whitelisted(ctx, manager.wtext_channels),
+            check_author_id_blacklisted(ctx, manager.users),
+            check_author_role_blacklisted(ctx, manager.roles),
+            check_text_channel_blacklisted(ctx, manager.text_channels),
+            check_voice_channel_blacklisted(ctx, manager.voice_channels),
             check_author_voice_channel(ctx),
             check_bot_voice_channel(ctx),
             check_same_voice_channel(ctx),
@@ -401,8 +415,10 @@ class Music(commands.Cog):
         """Checks for the show command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.wroles),
-            check_text_channel_whitelisted(ctx, manager.wtext_channels),
+            check_author_id_blacklisted(ctx, manager.users),
+            check_author_role_blacklisted(ctx, manager.roles),
+            check_text_channel_blacklisted(ctx, manager.text_channels),
+            check_voice_channel_blacklisted(ctx, manager.voice_channels),
             check_author_voice_channel(ctx),
             check_bot_voice_channel(ctx),
             check_same_voice_channel(ctx),
@@ -456,8 +472,10 @@ class Music(commands.Cog):
         """Checks for the skip command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.wroles),
-            check_text_channel_whitelisted(ctx, manager.wtext_channels),
+            check_author_id_blacklisted(ctx, manager.users),
+            check_author_role_blacklisted(ctx, manager.roles),
+            check_text_channel_blacklisted(ctx, manager.text_channels),
+            check_voice_channel_blacklisted(ctx, manager.voice_channels),
             check_author_voice_channel(ctx),
             check_bot_voice_channel(ctx),
             check_same_voice_channel(ctx),
@@ -483,8 +501,10 @@ class Music(commands.Cog):
         """Checks for the volume command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.wroles),
-            check_text_channel_whitelisted(ctx, manager.wtext_channels),
+            check_author_id_blacklisted(ctx, manager.users),
+            check_author_role_blacklisted(ctx, manager.roles),
+            check_text_channel_blacklisted(ctx, manager.text_channels),
+            check_voice_channel_blacklisted(ctx, manager.voice_channels),
             check_valid_volume(ctx, volume),
         )
 

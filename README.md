@@ -26,23 +26,26 @@ This repository contains code to build a music bot for any Discord servers, allo
 
 The Discord bot supports the following commands:
 
-| Commands                                              | Description                                                                                          |
-| :---------------------------------------------------- | :--------------------------------------------------------------------------------------------------- |
-| !add &lt;url or query&gt;                             | Adds a YouTube audio source to the playlist.                                                         |
-| !help                                                 | Displays a list of available commands.                                                               |
-| !id                                                   | Displays role and text channel IDs.                                                                  |
-| !join                                                 | Makes the bot join the author's current voice channel.                                               |
-| !leave                                                | Disconnects the bot from the voice channel.                                                          |
-| !pause                                                | Pauses the currently playing audio source.                                                           |
-| !permission                                           | Displays the roles allowed to use each command and the text channels where each command can be used. |
-| !play                                                 | Starts playing the audio source from the playlist.                                                   |
-| !reset                                                | Stops the currently played audio source and clears the playlist.                                     |
-| !role &lt;cmd&gt; &lt;id1&gt; ... &lt;idN&gt;         | Whitelists specified roles for a command.                                                            |
-| !show &lt;n&gt;                                       | Lists the first `n` audio sources in the playlist.                                                   |
-| !skip                                                 | Skips the currently playing audio source.                                                            |
-| !text_channel &lt;cmd&gt; &lt;id1&gt; ... &lt;idN&gt; | Whitelists specified text channels for a command.                                                    |
-| !timeout &lt;ts&gt;                                   | Adjusts the bot's timeout duration.                                                                  |
-| !volume &lt;vol&gt;                                   | Modifies the playback volume of the audio source.                                                    |
+| Commands                                                      | Description                                                      |
+| :------------------------------------------------------------ | :--------------------------------------------------------------- |
+| !add &lt;url or query&gt;                                     | Adds a YouTube audio source to the playlist.                     |
+| !blacklist                                                    | Shows the blacklists for each command.                           |
+| !chat &lt;message&gt;                                         | Chats with the bot.                                              |
+| !help                                                         | Displays a list of available commands.                           |
+| !id                                                           | Shows the IDs in the current discord server.                     |
+| !join                                                         | Makes the bot join the author's current voice channel.           |
+| !leave                                                        | Disconnects the bot from the voice channel.                      |
+| !pause                                                        | Pauses the currently playing audio source.                       |
+| !play                                                         | Starts playing the audio source from the playlist.               |
+| !reset                                                        | Stops the currently played audio source and clears the playlist. |
+| !role &lt;cmd or all&gt; &lt;id1&gt; ... &lt;idN&gt;          | Blacklists specified roles for a command.                        |
+| !show &lt;n&gt;                                               | Lists the first `n` audio sources in the playlist.               |
+| !skip                                                         | Skips the currently playing audio source.                        |
+| !text_channel &lt;cmd or all&gt; &lt;id1&gt; ... &lt;idN&gt;  | Blacklists specified text channels for a command.                |
+| !timeout &lt;ts&gt;                                           | Adjusts the bot's timeout duration.                              |
+| !user &lt;cmd or all&gt; &lt;id1&gt; ... &lt;idN&gt;          | Blacklists specified users for a command.                        |
+| !voice_channel &lt;cmd or all&gt; &lt;id1&gt; ... &lt;idN&gt; | Blacklists specified voice channels for a command.               |
+| !volume &lt;vol&gt;                                           | Modifies the playback volume of the audio source.                |
 
 ### Build the Discord Bot via Docker 🐳
 
@@ -57,8 +60,6 @@ git clone https://github.com/nobodyPerfecZ/discord-bot.git
 2. **Adjust the config.yaml file**
 
 The `config.yaml` file defines the bot's default settings, including which roles are allowed to use specific commands and in which text channels commands can be executed.
-
-Since each role and text channel in Discord has a unique ID, you need to customize the `config.yaml` file to match your server's configuration. This ensures the bot operates correctly within your Discord server.
 
 3. **Add your Discord Token to compose.yaml file**
 
@@ -76,5 +77,6 @@ After running this command, the Discord bot should start and appear online in yo
 
 ## Development 🔧
 
-Contributions are welcome! Please fork the repository and submit a pull request.
+Contributions are welcome!
+Please fork the repository and submit a pull request.
 Make sure to follow the coding standards and write tests for any new features or bug fixes.

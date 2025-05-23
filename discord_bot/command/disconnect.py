@@ -6,9 +6,11 @@ import logging
 from discord.ext import commands, tasks
 
 from discord_bot.checks import (
-    check_author_whitelisted,
-    check_text_channel_whitelisted,
+    check_author_id_blacklisted,
+    check_author_role_blacklisted,
+    check_text_channel_blacklisted,
     check_valid_timeout,
+    check_voice_channel_blacklisted,
 )
 
 logger = logging.getLogger("discord")
@@ -77,8 +79,10 @@ class Disconnect(commands.Cog):
         """Checks for the timeout command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.wroles),
-            check_text_channel_whitelisted(ctx, manager.wtext_channels),
+            check_author_id_blacklisted(ctx, manager.users),
+            check_author_role_blacklisted(ctx, manager.roles),
+            check_text_channel_blacklisted(ctx, manager.text_channels),
+            check_voice_channel_blacklisted(ctx, manager.voice_channels),
             check_valid_timeout(ctx, timeout),
         )
 

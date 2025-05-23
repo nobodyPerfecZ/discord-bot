@@ -7,11 +7,13 @@ from discord.ext import commands
 from ollama import AsyncClient, ChatResponse
 
 from discord_bot.checks import (
+    check_author_id_blacklisted,
+    check_author_role_blacklisted,
     check_author_voice_channel,
-    check_author_whitelisted,
     check_bot_voice_channel,
     check_same_voice_channel,
-    check_text_channel_whitelisted,
+    check_text_channel_blacklisted,
+    check_voice_channel_blacklisted,
 )
 
 
@@ -42,15 +44,14 @@ class Chat(commands.Cog):
         self.model = model
         self.kwargs = kwargs
 
-    async def _before_chat(self, ctx: commands.Context, message: str):
+    async def _before_chat(self, ctx: commands.Context):
         """Checks for the chat command before performing it."""
         manager = self.bot.get_cog("Manager")
         await asyncio.gather(
-            check_author_whitelisted(ctx, manager.wroles),
-            check_text_channel_whitelisted(ctx, manager.wtext_channels),
-            check_author_voice_channel(ctx),
-            check_bot_voice_channel(ctx),
-            check_same_voice_channel(ctx),
+            check_author_id_blacklisted(ctx, manager.users),
+            check_author_role_blacklisted(ctx, manager.roles),
+            check_text_channel_blacklisted(ctx, manager.text_channels),
+            check_voice_channel_blacklisted(ctx, manager.voice_channels),
         )
 
     async def _chat_response(self, message: str) -> AsyncIterator[ChatResponse]:
@@ -85,7 +86,9 @@ class Chat(commands.Cog):
     @commands.command(aliases=["Chat"])
     async def chat(self, ctx: commands.Context, *message):
         """
-        Sends a message to the Ollama chat model and returns the response.
+        Chats with the bot.
+
+        It sends a message to an Ollama model and returns the response.
 
         Args:
             ctx (commands.Context):
@@ -96,6 +99,6 @@ class Chat(commands.Cog):
         """
         async with ctx.typing():
             message = " ".join(message)
-            await self._before_chat(ctx, message)
+            await self._before_chat(ctx)
             response = await self._chat_response(message)
             await ctx.send(content=response)

@@ -8,21 +8,23 @@ from discord.ext import commands
 
 from discord_bot.checks import (
     check_author_admin,
+    check_author_id_blacklisted,
+    check_author_role_blacklisted,
     check_author_voice_channel,
-    check_author_whitelisted,
     check_bot_streaming,
     check_bot_voice_channel,
     check_less_equal_author,
-    check_non_empty_list,
     check_same_voice_channel,
-    check_text_channel_whitelisted,
+    check_text_channel_blacklisted,
     check_valid_command,
     check_valid_n,
-    check_valid_roles,
+    check_valid_author_roles,
     check_valid_text_channels,
     check_valid_timeout,
     check_valid_url,
+    check_valid_voice_channels,
     check_valid_volume,
+    check_voice_channel_blacklisted,
 )
 
 
@@ -68,6 +70,7 @@ class VoiceMock:
 class AuthorMock:
     """Mock class for ctx.author."""
 
+    id: int
     voice: VoiceMock | None
     roles: List[RoleMock]
     guild_permissions: GuildPermissionMock
@@ -103,6 +106,7 @@ class GuildMock:
 
     roles: List[RoleMock]
     text_channels: List[TextChannelMock]
+    voice_channels: List[VoiceChannelMock]
 
 
 @dataclass
@@ -122,6 +126,7 @@ class ContextMock:
 
 __CTX__ = ContextMock(
     author=AuthorMock(
+        id=123898634924425216,
         voice=VoiceMock(
             channel=VoiceChannelMock(id=248902220446302219, name="Gaming Channel #1👾")
         ),
@@ -145,6 +150,21 @@ __CTX__ = ContextMock(
             TextChannelMock(id=725461496036982914, name="invite📌"),
             TextChannelMock(id=368795981124468745, name="animerecommendation"),
             TextChannelMock(id=899013316364632104, name="bottest"),
+        ],
+        voice_channels=[
+            VoiceChannelMock(id=348902220446302219, name="Admin Raum💂"),
+            VoiceChannelMock(id=245902220446302219, name="Moderator Raum👲"),
+            VoiceChannelMock(id=248906220446302219, name="Gruppenraum #1🔒"),
+            VoiceChannelMock(id=248908220446302219, name="Gruppenraum #2🔒"),
+            VoiceChannelMock(id=248902220046302219, name="Gruppenraum #1🔒"),
+            VoiceChannelMock(id=248902120446302219, name="Gruppenraum #2🔒"),
+            VoiceChannelMock(id=244902220446302219, name="Eingangshalle🚪"),
+            VoiceChannelMock(id=248902220446302219, name="Gaming Channel #1👾"),
+            VoiceChannelMock(id=248902220447302219, name="Gaming Channel #2👾"),
+            VoiceChannelMock(id=248902220446802219, name="Programming Ecke💻"),
+            VoiceChannelMock(id=248902220446392219, name="Business Gespräche💲💹"),
+            VoiceChannelMock(id=248902220446300219, name="Kinomodus🍿"),
+            VoiceChannelMock(id=248902220446302119, name="Unterwegs zur Brücke🌉"),
         ],
     ),
     voice_client=VoiceClientMock(
@@ -252,67 +272,102 @@ async def test_check_author_admin_with_valid_ctx():
 
 
 @pytest.mark.asyncio
-async def test_check_author_whitelisted_with_invalid_ctx():
-    """Tests check_author_whitelisted() function with invalid ctx."""
+async def test_check_author_id_blacklisted_with_invalid_ctx():
+    """Tests check_author_id_blacklisted() function with invalid ctx."""
+    ctx = __CTX__
+    users = {"play": [123898634924425216]}
+
+    with pytest.raises(commands.CommandError):
+        await check_author_id_blacklisted(ctx, users)
+
+
+@pytest.mark.asyncio
+async def test_check_author_id_blacklisted_with_valid_ctx():
+    """Tests check_author_id_blacklisted() function with invalid ctx."""
+    ctx = replace(__CTX__, author=replace(__CTX__.author, id=234898634924425216))
+    users = {"play": [123898634924425216]}
+
+    await check_author_id_blacklisted(ctx, users)
+
+
+@pytest.mark.asyncio
+async def test_check_author_role_blacklisted_with_invalid_ctx():
+    """Tests check_author_blacklisted() function with invalid ctx."""
     ctx = replace(
         __CTX__,
         author=replace(
             __CTX__.author, roles=[RoleMock(id=385159915918065664, name="Jonin")]
         ),
     )
-    wroles = {"play": [542084251038908436, 248898634924425216]}
+    roles = {"play": [686645319718404100, 385159915918065664, 248898634924425216]}
 
     with pytest.raises(commands.CommandError):
-        await check_author_whitelisted(ctx, wroles)
+        await check_author_role_blacklisted(ctx, roles)
 
 
 @pytest.mark.asyncio
-async def test_check_author_whitelisted_with_valid_ctx():
-    """Tests check_author_whitelisted() function with valid ctx."""
+async def test_check_author_role_blacklisted_with_valid_ctx():
+    """Tests check_author_blacklisted() function with valid ctx."""
     ctx = __CTX__
-    wroles = {"play": [542084251038908436, 248898634924425216]}
+    roles = {"play": [686645319718404100, 385159915918065664, 248898634924425216]}
 
-    await check_author_whitelisted(ctx, wroles)
+    await check_author_role_blacklisted(ctx, roles)
 
 
 @pytest.mark.asyncio
-async def test_check_text_channel_whitelisted_with_invalid_ctx():
-    """Tests check_text_channel_whitelisted() function with invalid ctx."""
+async def test_check_text_channel_blacklisted_with_invalid_ctx():
+    """Tests check_text_channel_blacklisted() function with invalid ctx."""
+    ctx = __CTX__
+    text_channels = {"play": [248897274002931722, 725622500846993530]}
+
+    with pytest.raises(commands.CommandError):
+        await check_text_channel_blacklisted(ctx, text_channels)
+
+
+@pytest.mark.asyncio
+async def test_check_text_channel_blacklisted_with_valid_ctx():
+    """Tests check_text_channel_blacklisted() function with valid ctx."""
     ctx = replace(
-        __CTX__, channel=TextChannelMock(id=684681937155260433, name="challenges📰")
+        __CTX__,
+        channel=TextChannelMock(id=725461496036982914, name="invite📌"),
     )
-    wtext_channels = {"play": [248897274002931722, 725622500846993530]}
+    text_channels = {"play": [248897274002931722, 725622500846993530]}
+
+    await check_text_channel_blacklisted(ctx, text_channels)
+
+
+@pytest.mark.asyncio
+async def test_check_voice_channel_blacklisted_with_invalid_ctx():
+    """Tests check_voice_channel_blacklisted() function with invalid ctx."""
+    ctx = __CTX__
+    voice_channels = {"play": [248902220446302219, 248902220447302219]}
 
     with pytest.raises(commands.CommandError):
-        await check_text_channel_whitelisted(ctx, wtext_channels)
+        await check_voice_channel_blacklisted(ctx, voice_channels)
 
 
 @pytest.mark.asyncio
-async def test_check_text_channel_whitelisted_with_valid_ctx():
-    """Tests check_text_channel_whitelisted() function with valid ctx."""
-    ctx = __CTX__
-    wtext_channels = {"play": [248897274002931722, 725622500846993530]}
+async def test_check_voice_channel_blacklisted_with_valid_ctx():
+    """Tests check_voice_channel_blacklisted() function with valid ctx."""
+    ctx = replace(
+        __CTX__,
+        author=replace(
+            __CTX__.author,
+            voice=replace(
+                __CTX__.author.voice,
+                channel=VoiceChannelMock(
+                    id=248902220446802219, name="Programming Ecke💻"
+                ),
+            ),
+        ),
+        voice_client=replace(
+            __CTX__.voice_client,
+            channel=VoiceChannelMock(id=248902220446802219, name="Programming Ecke💻"),
+        ),
+    )
+    voice_channels = {"play": [248902220446302219, 248902220447302219]}
 
-    await check_text_channel_whitelisted(ctx, wtext_channels)
-
-
-@pytest.mark.asyncio
-async def test_check_non_empty_list_with_invalid_list():
-    """Tests check_non_empty_list() function with invalid list."""
-    ctx = __CTX__
-    array = []
-
-    with pytest.raises(commands.CommandError):
-        await check_non_empty_list(ctx, array)
-
-
-@pytest.mark.asyncio
-async def test_check_non_empty_list_with_valid_list():
-    """Tests check_non_empty_list() function with valid list."""
-    ctx = __CTX__
-    array = [1, 2, 3]
-
-    await check_non_empty_list(ctx, array)
+    await check_voice_channel_blacklisted(ctx, voice_channels)
 
 
 @pytest.mark.asyncio
@@ -413,22 +468,22 @@ async def test_check_valid_command_with_valid_command():
 
 
 @pytest.mark.asyncio
-async def test_check_valid_roles_with_invalid_roles():
-    """Tests check_valid_roles() function with invalid roles."""
+async def test_check_valid_author_roles_with_invalid_roles():
+    """Tests check_valid_author_roles() function with invalid author roles."""
     ctx = __CTX__
     role_ids = [542084251038908436, 248898634924425123]
 
     with pytest.raises(commands.CommandError):
-        await check_valid_roles(ctx, role_ids)
+        await check_valid_author_roles(ctx, role_ids)
 
 
 @pytest.mark.asyncio
-async def test_check_valid_roles_with_valid_roles():
-    """Tests check_valid_roles() function with valid roles."""
+async def test_check_valid_author_roles_with_valid_roles():
+    """Tests check_valid_author_roles() function with valid author roles."""
     ctx = __CTX__
     roles = [542084251038908436, 248898634924425216]
 
-    await check_valid_roles(ctx, roles)
+    await check_valid_author_roles(ctx, roles)
 
 
 @pytest.mark.asyncio
@@ -448,6 +503,25 @@ async def test_check_valid_text_channels_with_valid_text_channels():
     text_channels = [248897274002931722, 725622500846993530]
 
     await check_valid_text_channels(ctx, text_channels)
+
+
+@pytest.mark.asyncio
+async def test_check_valid_voice_channels_with_invalid_voice_channels():
+    """Tests check_valid_voice_channels() function with invalid voice channels."""
+    ctx = __CTX__
+    voice_channels = [123902220446302219, 456902220446302219]
+
+    with pytest.raises(commands.CommandError):
+        await check_valid_voice_channels(ctx, voice_channels)
+
+
+@pytest.mark.asyncio
+async def test_check_valid_voice_channels_with_valid_voice_channels():
+    """Tests check_valid_voice_channels() function with valid voice channels."""
+    ctx = __CTX__
+    voice_channels = [348902220446302219, 245902220446302219]
+
+    await check_valid_voice_channels(ctx, voice_channels)
 
 
 @pytest.mark.asyncio
